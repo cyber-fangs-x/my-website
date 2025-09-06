@@ -1,15 +1,13 @@
-//import { GeometryHandler } from './geometry-handler.js';
 
-function bunny_demo() {
-  const canvas = document.getElementById('webgl-canvas');
+function spinning_cube() {
+  const canvas = document.getElementById('cube-canvas');
   const gl = canvas.getContext('webgl');
-  const ext = gl.getExtension("OES_element_index_uint");
 
   if (!gl) {
     throw new Error('WebGL not supported');
   }
 
-  const vs = new Float32Array([
+  const posData = new Float32Array([
     1.0,  1.0,  1.0, 
     -1.0,  1.0,  1.0, 
     -1.0, -1.0,  1.0, 
@@ -20,7 +18,7 @@ function bunny_demo() {
     -1.0, -1.0, -1.0 
   ]); 
 
-  const fs = new Uint16Array([
+  const indData = new Uint16Array([
     0, 1, 2,   0, 2, 3,  // front
     0, 3, 4,   0, 4, 5,  // right
     0, 5, 6,   0, 6, 1,  // up
@@ -29,7 +27,7 @@ function bunny_demo() {
     4, 7, 6,   4, 6, 5   // back
   ]);
 
-  const colorData = new Float32Array([
+  const colData = new Float32Array([
     1.0,  1.0,  1.0,  // v0 white
     1.0,  0.0,  1.0,  // v1 magenta
     1.0,  0.0,  0.0,  // v2 red
@@ -40,13 +38,6 @@ function bunny_demo() {
     0.0,  0.0,  0.0   // v7 black
   ]);
 
-  let object = new GeometryHandler(bunny);
-  let camera = new CameraHandler(1.5);
-  let positions = object.vertices;
-  let indices = object.faces;
-  let colors = object.colors;
-
-  // ################## WEBGL STUFF ##################################
 
   let vertexShader = gl.createShader(gl.VERTEX_SHADER);
   gl.shaderSource(vertexShader, `
@@ -79,11 +70,9 @@ function bunny_demo() {
   gl.linkProgram(program);
 
 
-  //const positionBuffer = array_buffer(gl, vertexData, program, 'position', 3, gl.FLOAT);
-  let positionBuffer = array_buffer(gl, positions, program, 'position', 3, gl.FLOAT);
-  let indexBuffer = element_array_buffer(gl, indices);
-
-  let colorBuffer = array_buffer(gl, colors, program, 'color', 3, gl.FLOAT);
+  let positionBuffer = array_buffer(gl, posData, program, 'position', 3, gl.FLOAT);
+  let indexBuffer = element_array_buffer(gl, indData);
+  let colorBuffer = array_buffer(gl, colData, program, 'color', 3, gl.FLOAT);
 
 
   gl.useProgram(program);
@@ -104,28 +93,27 @@ function bunny_demo() {
   let mvpMatrix = glMatrix.mat4.create();
   let mvMatrix = glMatrix.mat4.create();
   let modelMatrix = glMatrix.mat4.create();
+  camera = new CameraHandler(4);
   let viewMatrix = camera.view_matrix;
   glMatrix.mat4.translate(modelMatrix, modelMatrix, [0, 0, 0]); 
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
   gl.clear(gl.COLOR_BUFFER_BIT);
 
-  //glMatrix.mat4.translate(modelMatrix, modelMatrix, [-1.5, 0, -2]);
-
   function animate() {
     requestAnimationFrame(animate);
   
-    //glMatrix.mat4.rotateZ(modelMatrix, modelMatrix, Math.PI/2/70);
-    //glMatrix.mat4.rotateX(modelMatrix, modelMatrix, Math.PI/2/70);
+    glMatrix.mat4.rotateZ(modelMatrix, modelMatrix, Math.PI/2/70);
+    glMatrix.mat4.rotateX(modelMatrix, modelMatrix, Math.PI/2/70);
     glMatrix.mat4.multiply(mvMatrix, viewMatrix, modelMatrix);
     glMatrix.mat4.multiply(mvpMatrix, projectionMatrix, mvMatrix);
     gl.uniformMatrix4fv(uniformLocations.matrix, false, mvpMatrix);
     
     gl.clear(gl.COLOR_BUFFER_BIT);
-    //gl.drawArrays(gl.TRIANGLES, 0, vertexData.length / 3);
-    gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_INT, 0);
+    gl.drawElements(gl.TRIANGLES, indData.length, gl.UNSIGNED_SHORT, 0);
   }
 
-  animate(); 
+  animate();
+
 }
 
-bunny_demo();
+spinning_cube();

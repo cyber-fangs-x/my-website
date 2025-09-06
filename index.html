@@ -20,8 +20,11 @@
     <script src="lib/geometry-processing-js/input/bunny.js"></script>
     <script src="lib/geometry-processing-js/utils/meshio.js"></script>
     <script src="lib/geometry-processing-js/utils/colormap.js"></script>
+    <script src="src/geometry-handler.js" defer></script>
+    <script src="src/camera-handler.js" defer></script>
     <script src="src/webgl.js" defer></script>
     <script src="src/renderer.js" defer></script>
+    <script src="src/cube.js" defer></script>
     
 <style>
 html, body {
@@ -57,11 +60,14 @@ html, body {
 </head>
   <body>
      <div class="entry_window window_frame">
+      <div>
+        <p style="font-family:'Lekton'; font-size: 25px">welcome to my site!!</p>
+      </div>
+      <div class="webgl-container">
+        <canvas id="cube-canvas" width="200", height="200"></canvas>
+      </div>
       <div class="webgl-container">
         <canvas id="webgl-canvas" width="200", height="200"></canvas>
-      </div>
-      <div>
-        <p style="font-family:'Lekton'; font-size: 25px">Welcome to my site~</p>
       </div>
      </div>
   </body>
