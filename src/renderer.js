@@ -9,42 +9,14 @@ function bunny_demo() {
     throw new Error('WebGL not supported');
   }
 
-  const vs = new Float32Array([
-    1.0,  1.0,  1.0, 
-    -1.0,  1.0,  1.0, 
-    -1.0, -1.0,  1.0, 
-    1.0, -1.0,  1.0, 
-    1.0, -1.0, -1.0, 
-    1.0,  1.0, -1.0, 
-    -1.0,  1.0, -1.0, 
-    -1.0, -1.0, -1.0 
-  ]); 
-
-  const fs = new Uint16Array([
-    0, 1, 2,   0, 2, 3,  // front
-    0, 3, 4,   0, 4, 5,  // right
-    0, 5, 6,   0, 6, 1,  // up
-    1, 6, 7,   1, 7, 2,  // left
-    7, 4, 3,   7, 3, 2,  // down
-    4, 7, 6,   4, 6, 5   // back
-  ]);
-
-  const colorData = new Float32Array([
-    1.0,  1.0,  1.0,  // v0 white
-    1.0,  0.0,  1.0,  // v1 magenta
-    1.0,  0.0,  0.0,  // v2 red
-    1.0,  1.0,  0.0,  // v3 yellow
-    0.0,  1.0,  0.0,  // v4 green
-    0.0,  1.0,  1.0,  // v5 cyan
-    0.0,  0.0,  1.0,  // v6 blue
-    0.0,  0.0,  0.0   // v7 black
-  ]);
+  // ################## OBJECT STUFF ##################################
 
   let object = new GeometryHandler(bunny);
   let camera = new CameraHandler(1.5);
   let positions = object.vertices;
   let indices = object.faces;
   let colors = object.colors;
+  let normals = object.normals;
 
   // ################## WEBGL STUFF ##################################
 
@@ -52,11 +24,19 @@ function bunny_demo() {
   gl.shaderSource(vertexShader, `
   attribute vec3 position;
   attribute vec4 color;
+  attribute vec3 normal;
   varying vec4 v_color;
+  varying float v_light;
+
+  const vec3 light_dir = normalize(vec3(0, 1, 1));
+  const float ambient = 0.1;
 
   uniform mat4 matrix;
+  uniform mat4 normal_matrix;
 
   void main() {
+    vec3 world_normal = normalize((normal_matrix * vec4(normal, 0)).xyz);
+    v_light = max(dot(world_normal, light_dir), 0.0) * (1.0 - ambient) + ambient;
     gl_Position = matrix * vec4(position, 1);
     v_color = color;
   }
@@ -67,8 +47,9 @@ function bunny_demo() {
   gl.shaderSource(fragmentShader, `
   precision mediump float;
   varying vec4 v_color;
+  varying float v_light;
   void main() {
-    gl_FragColor = v_color;
+    gl_FragColor = v_color * vec4(vec3(v_light), 1.0);
   }
   `);
   gl.compileShader(fragmentShader);
@@ -82,7 +63,7 @@ function bunny_demo() {
   //const positionBuffer = array_buffer(gl, vertexData, program, 'position', 3, gl.FLOAT);
   let positionBuffer = array_buffer(gl, positions, program, 'position', 3, gl.FLOAT);
   let indexBuffer = element_array_buffer(gl, indices);
-
+  let normalBuffer = array_buffer(gl, normals, program, 'normal', 3, gl.FLOAT);
   let colorBuffer = array_buffer(gl, colors, program, 'color', 3, gl.FLOAT);
 
 
@@ -91,6 +72,7 @@ function bunny_demo() {
 
   let uniformLocations = {
     matrix: gl.getUniformLocation(program, 'matrix'),
+    normal_matrix: gl.getUniformLocation(program, 'normal_matrix')
   };
 
   let projectionMatrix = glMatrix.mat4.create();
@@ -105,23 +87,28 @@ function bunny_demo() {
   let mvMatrix = glMatrix.mat4.create();
   let modelMatrix = glMatrix.mat4.create();
   let viewMatrix = camera.view_matrix;
-  glMatrix.mat4.translate(modelMatrix, modelMatrix, [0, 0, 0]); 
+  let normalMatrix = glMatrix.mat4.create();
+  
+  //glMatrix.mat4.translate(modelMatrix, modelMatrix, [0, 0, 0]); 
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
   gl.clear(gl.COLOR_BUFFER_BIT);
 
-  //glMatrix.mat4.translate(modelMatrix, modelMatrix, [-1.5, 0, -2]);
 
   function animate() {
     requestAnimationFrame(animate);
   
-    //glMatrix.mat4.rotateZ(modelMatrix, modelMatrix, Math.PI/2/70);
-    //glMatrix.mat4.rotateX(modelMatrix, modelMatrix, Math.PI/2/70);
+    // MVP matrix
     glMatrix.mat4.multiply(mvMatrix, viewMatrix, modelMatrix);
     glMatrix.mat4.multiply(mvpMatrix, projectionMatrix, mvMatrix);
+
+    // normal matrix
+    glMatrix.mat4.invert(normalMatrix, mvMatrix);
+    glMatrix.mat4.transpose(normalMatrix, normalMatrix);
+
+    gl.uniformMatrix4fv(uniformLocations.normal_matrix, false, normalMatrix);
     gl.uniformMatrix4fv(uniformLocations.matrix, false, mvpMatrix);
     
     gl.clear(gl.COLOR_BUFFER_BIT);
-    //gl.drawArrays(gl.TRIANGLES, 0, vertexData.length / 3);
     gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_INT, 0);
   }
 

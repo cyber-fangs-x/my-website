@@ -27,25 +27,71 @@
     <script src="src/cube.js" defer></script>
     
 <style>
+:root {
+  --purple-color: rgb(174, 0, 255);
+}
+@font-face {
+    font-family: "HerculesOutline";
+    src: url(fonts/HerculesPixelFontOutline-4nqgK.otf) format('opentype'), url(fonts/HerculesPixelFontRegular-ovAX0.otf) format('opentype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
 html, body {
   background-image: url('imgs/nightcity_background.jpg');
   background-attachment: fixed;
   background-size: cover;
   text-align: center;
+  align-items: center;
+  justify-content: center;
   min-height: 100vh;
+  display: flex;
+  margin: 0;
 }
 
-.window_frame {
-  color: rgb(0, 0, 0);
-  background-color: gray;
-  border: 3px outset black;
+.main_window {
+  color: gray;
+  font-size: 24px;
+  font-family: 'Courier New', Courier, monospace;
+  width: 800px;
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  box-sizing: border-box;
 }
 
-.entry_window {
-  width:400px;
-  height:100%;
-  margin:auto;
-  margin-top:100px;
+.banner{
+  color: rgb(174, 0, 255);
+  font-size: 70px;
+  font-style: italic;
+  text-shadow: 0 0 10px var(--purple-color), 0 0 20px var(--purple-color), 0 0 30px var(--purple-color);
+  font-family:'HerculesOutline'; 
+  position:absolute;
+  top: -66px;
+  right: -2px;
+  z-index: 10;
+  white-space: nowrap;
+}
+
+.container{
+  background-image: linear-gradient(rgba(0, 0, 0, 0.99), rgba(174, 0, 255, 0.5));
+  border: 3px solid rgba(174, 0, 255, 0.5);
+  box-shadow: 0 0 8px var(--purple-color), 0 0 20px var(--purple-color);
+  flex-grow:1; 
+  align-content: center;
+}
+
+.navigation{
+  background-image: none;
+  background-color: rgba(0, 0, 0, 0.99);
+  flex-basis:100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+  padding: 10px;
+  margin-bottom: 20px;
 }
 
 .webgl-container {
@@ -59,16 +105,24 @@ html, body {
 </style>
 </head>
   <body>
-     <div class="entry_window window_frame">
-      <div>
-        <p style="font-family:'Lekton'; font-size: 25px">welcome to my site!!</p>
+    <div class="main_window">   
+      <div class="banner">cyber-fang</div>
+      <nav class="navigation container">
+        <a href="index.html" style="color: gray; text-decoration: none;">home</a>
+        <a href="about.html" style="color: gray; text-decoration: none;">about me</a>
+        <a href="projects.html" style="color: gray; text-decoration: none;">projects</a>
+        <a href="contact.html" style="color: gray; text-decoration: none;">contact</a>
+      </nav>
+      <div class="container">
+        <div><p>welcome to my site!!</p></div>
+        <div class="webgl-container">
+          <canvas id="cube-canvas" width="200", height="200"></canvas></div>
+        <div class="webgl-container">
+          <canvas id="webgl-canvas" width="200", height="200"></canvas></div>
+      </div>  
+      <div class="container" style="margin-left:20px; ">
+        <img src="imgs/mary.gif" alt="blue mary" style="height:200px">
       </div>
-      <div class="webgl-container">
-        <canvas id="cube-canvas" width="200", height="200"></canvas>
-      </div>
-      <div class="webgl-container">
-        <canvas id="webgl-canvas" width="200", height="200"></canvas>
-      </div>
-     </div>
+    </div>
   </body>
 </html>
