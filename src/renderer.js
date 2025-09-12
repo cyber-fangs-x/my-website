@@ -12,7 +12,7 @@ function bunny_demo() {
   // ################## OBJECT STUFF ##################################
 
   let object = new GeometryHandler(bunny);
-  let camera = new CameraHandler(1.5);
+  let camera = new CameraHandler(canvas, 1.5);
   let positions = object.vertices;
   let indices = object.faces;
   let colors = object.colors;

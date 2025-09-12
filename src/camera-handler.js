@@ -18,8 +18,9 @@ class CameraHandler {
 	 * @property {boolean} mousedown - Whether the mouse is currently pressed.
      * @property {number} mouse_pos - The last recorded mouse position.
 	 */
-    constructor(distance) {
+    constructor(canvas, distance) {
         // camera parameters
+        this.canvas = canvas;
         this.target = [0, 0, 0];
         this.distance = distance;
         this.yaw_quat = glMatrix.quat.create();
@@ -29,13 +30,9 @@ class CameraHandler {
         this.camera_pos = glMatrix.vec3.fromValues(0, 0, distance);
         this.view_matrix = glMatrix.mat4.lookAt(glMatrix.mat4.create(), this.camera_pos, this.target, WORLD_UP);
         
-        // mouse interaction state
-        this.mousedown = false;
-        this.mouse_pos = [0, 0];
-
-        // touch interaction state
-        this.touchdown = false;
-        this.touch_pos = [0, 0];
+        // cursor interaction state
+        this.cursordown = false;
+        this.cursor_pos = [0, 0];
 
         this.setCameraEvents();
     }
@@ -46,43 +43,34 @@ class CameraHandler {
 	 */
     setCameraEvents() {
         // mouse click
-        window.addEventListener('mousedown', (event) => {
-            this.mousedown = true;
-            this.mouse_pos = [event.clientX, event.clientY];
+        this.canvas.addEventListener('mousedown', (event) => {
+            this.cursordown = true;
+            this.cursor_pos = [event.clientX, event.clientY];
         });
         
         // mouse release
         window.addEventListener('mouseup', (event) => {
-            this.mousedown = false;
+            this.cursordown = false;
         });
 
         // mouse move, if mouse is down, update orientation
         window.addEventListener('mousemove', (event) => {
-            if (this.mousedown) {
-                let dx = event.clientX - this.mouse_pos[0];
-                let dy = event.clientY - this.mouse_pos[1];
-
-                // update camera orientation
-                this.updateCamera(dx, dy);
-
-                // update new mouse position
-                this.mouse_pos = [event.clientX, event.clientY];
-            }
+            this.moveCursor(event.clientX, event.clientY);
         });
 
-        window.addEventListener('wheel', (event) => {
+        this.canvas.addEventListener('wheel', (event) => {
             this.distance -= event.deltaY * 0.01;
             this.distance = Math.max(0.1, this.distance);
             this.updateCamera(0, 0);
         });
 
         // touch events
-        window.addEventListener('touchstart', (event) => {
+        this.canvas.addEventListener('touchstart', (event) => {
             event.preventDefault()
             if (event.touches.length === 1) {
                 const touch = event.touches[0]
-                this.touchdown = true;
-                this.touch_pos = [touch.clientX, touch.clientY];
+                this.cursordown = true;
+                this.cursor_pos = [touch.clientX, touch.clientY];
             }
         }, {passive: false})
         
@@ -90,24 +78,28 @@ class CameraHandler {
             event.preventDefault()
             if (event.touches.length === 1) {
                 const touch = event.touches[0]
-                if (this.touchdown) {
-                    let dx = event.clientX - this.touch_pos[0];
-                    let dy = event.clientY - this.touch_pos[1];
-
-                    // update camera orientation
-                    this.updateCamera(dx, dy);
-
-                    // update new mouse position
-                    this.touch_pos = [event.clientX, event.clientY];
-                }
+                this.moveCursor(touch.clientX, touch.clientY);
             }
         }, {passive: false})
         
         window.addEventListener('touchend', (event) => {
             event.preventDefault()
-            this.touchdown = false;
+            this.cursordown = false;
         }, {passive: false})
 
+    }
+
+    moveCursor(x, y) {
+        if (this.cursordown) {
+            let dx = x - this.cursor_pos[0];
+            let dy = y - this.cursor_pos[1];
+
+            // update camera orientation
+            this.updateCamera(dx, dy);
+
+            // update new mouse position
+            this.cursor_pos = [x, y];
+        }
     }
 
     /**

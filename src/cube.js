@@ -93,21 +93,35 @@ function spinning_cube() {
   let mvpMatrix = glMatrix.mat4.create();
   let mvMatrix = glMatrix.mat4.create();
   let modelMatrix = glMatrix.mat4.create();
-  camera = new CameraHandler(4);
+  camera = new CameraHandler(canvas, 4);
   let viewMatrix = camera.view_matrix;
   glMatrix.mat4.translate(modelMatrix, modelMatrix, [0, 0, 0]); 
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
   gl.clear(gl.COLOR_BUFFER_BIT);
 
+  let UI_demo = {
+    spin: false,
+    lighting: false,
+    perspective: true,
+  };
+
   function animate() {
     requestAnimationFrame(animate);
-  
-    glMatrix.mat4.rotateZ(modelMatrix, modelMatrix, Math.PI/2/70);
-    glMatrix.mat4.rotateX(modelMatrix, modelMatrix, Math.PI/2/70);
+    
+    if (UI_demo.spin) {
+      glMatrix.mat4.rotateZ(modelMatrix, modelMatrix, Math.PI/2/70);
+      glMatrix.mat4.rotateX(modelMatrix, modelMatrix, Math.PI/2/70);
+    }
+
     glMatrix.mat4.multiply(mvMatrix, viewMatrix, modelMatrix);
     glMatrix.mat4.multiply(mvpMatrix, projectionMatrix, mvMatrix);
-    gl.uniformMatrix4fv(uniformLocations.matrix, false, mvpMatrix);
-    
+
+    if (UI_demo.perspective) {
+      gl.uniformMatrix4fv(uniformLocations.matrix, false, mvpMatrix);
+    } else {
+      gl.uniformMatrix4fv(uniformLocations.matrix, false, mvMatrix);
+    }
+
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.drawElements(gl.TRIANGLES, indData.length, gl.UNSIGNED_SHORT, 0);
   }
