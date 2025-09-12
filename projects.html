@@ -28,7 +28,7 @@
     
 <style>
 :root {
-  --purple-color: rgb(174, 0, 255);
+  --purple-color: rgb(0, 234, 255);
 }
 @font-face {
     font-family: "HerculesOutline";
@@ -39,7 +39,7 @@
 }
 
 html, body {
-  background-image: url('imgs/nightcity_background.jpg');
+  background-image: url('imgs/motel_background.jpg');
   background-attachment: fixed;
   background-size: cover;
   text-align: center;
@@ -62,7 +62,7 @@ html, body {
 }
 
 .banner{
-  color: rgb(174, 0, 255);
+  color: var(--purple-color);
   font-size: 70px;
   font-style: italic;
   text-shadow: 0 0 10px var(--purple-color), 0 0 20px var(--purple-color), 0 0 30px var(--purple-color);
@@ -75,8 +75,8 @@ html, body {
 }
 
 .container{
-  background-image: linear-gradient(rgba(0, 0, 0, 0.99), rgba(174, 0, 255, 0.8));
-  border: 3px solid rgba(174, 0, 255, 0.8);
+  background-image: linear-gradient(rgba(0, 0, 0, 0.99), rgba(0, 234, 255, 0.5));
+  border: 3px solid rgba(0, 234, 255, 0.5);
   box-shadow: 0 0 8px var(--purple-color), 0 0 20px var(--purple-color);
   flex-grow:1; 
   align-content: center;
@@ -88,7 +88,7 @@ html, body {
   flex-basis:100%;
   display: flex;
   flex-direction: row;
-  justify-content: space-around;
+  justify-content: flex-start;
   align-items: center;
   padding: 10px;
   margin-bottom: 20px;
@@ -108,10 +108,7 @@ html, body {
     <div class="main_window">   
       <div class="banner">cyber-fang</div>
       <nav class="navigation container">
-        <a href="index.html" style="color: gray; text-decoration: none;">home</a>
-        <a href="about.html" style="color: gray; text-decoration: none;">about me</a>
-        <a href="projects.html" style="color: gray; text-decoration: none;">projects</a>
-        <a href="contact.html" style="color: gray; text-decoration: none;">contact</a>
+        <a href="index.html" style="color: gray; text-decoration: none; margin-left:50px">back</a>
       </nav>
       <div class="container">
         <div><p>welcome to my site!!</p></div>
@@ -120,9 +117,6 @@ html, body {
         <div class="webgl-container">
           <canvas id="webgl-canvas" width="200", height="200"></canvas></div>
       </div>  
-      <div class="container" style="margin-left:20px; ">
-        <img src="imgs/mary.gif" alt="blue mary" style="height:200px">
-      </div>
     </div>
   </body>
 </html>

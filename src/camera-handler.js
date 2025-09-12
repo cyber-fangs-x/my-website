@@ -33,6 +33,10 @@ class CameraHandler {
         this.mousedown = false;
         this.mouse_pos = [0, 0];
 
+        // touch interaction state
+        this.touchdown = false;
+        this.touch_pos = [0, 0];
+
         this.setCameraEvents();
     }
 
@@ -65,6 +69,45 @@ class CameraHandler {
                 this.mouse_pos = [event.clientX, event.clientY];
             }
         });
+
+        window.addEventListener('wheel', (event) => {
+            this.distance -= event.deltaY * 0.01;
+            this.distance = Math.max(0.1, this.distance);
+            this.updateCamera(0, 0);
+        });
+
+        // touch events
+        window.addEventListener('touchstart', (event) => {
+            event.preventDefault()
+            if (event.touches.length === 1) {
+                const touch = event.touches[0]
+                this.touchdown = true;
+                this.touch_pos = [touch.clientX, touch.clientY];
+            }
+        }, {passive: false})
+        
+        window.addEventListener('touchmove', (event) => {
+            event.preventDefault()
+            if (event.touches.length === 1) {
+                const touch = event.touches[0]
+                if (this.touchdown) {
+                    let dx = event.clientX - this.touch_pos[0];
+                    let dy = event.clientY - this.touch_pos[1];
+
+                    // update camera orientation
+                    this.updateCamera(dx, dy);
+
+                    // update new mouse position
+                    this.touch_pos = [event.clientX, event.clientY];
+                }
+            }
+        }, {passive: false})
+        
+        window.addEventListener('touchend', (event) => {
+            event.preventDefault()
+            this.touchdown = false;
+        }, {passive: false})
+
     }
 
     /**
