@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frei Otto Soap Film Simulation</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #111; font-family: sans-serif; }
+        #info { position: absolute; top: 10px; left: 10px; color: white; pointer-events: none; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 5px; }
+        button { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 10px 20px; background: #333; color: white; border: 1px solid #fff; cursor: pointer; border-radius: 4px; }
+        button:hover { background: #555; }
+    </style>
+</head>
+<body>
+    <div id="info">
+        <h2>Frei Otto Form-Finding Simulation</h2>
+        <p>Demonstrating minimal surfaces using physical relaxation.</p>
+    </div>
+    <button id="resetBtn">Distort & Resolve</button>
+
+    <script type="module">
+        import * as THREE from './lib/three/build/three.webgpu.js';
+
+        async function init() {
+            // --- 1. SETUP SCENE ---
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x111115);
+
+            const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 3, 20);
+
+            const renderer = new THREE.WebGPURenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+
+            // --- 2. LIGHTING (Iridescent/Soap Film Vibe) ---
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+            scene.add(ambientLight);
+
+            const dirLight1 = new THREE.DirectionalLight(0x00aaff, 1.5);
+            dirLight1.position.set(5, 10, 7);
+            scene.add(dirLight1);
+
+            const dirLight2 = new THREE.DirectionalLight(0xff00aa, 1.5);
+            dirLight2.position.set(-5, -5, -7);
+            scene.add(dirLight2);
+
+            // --- 3. CREATE SOAP FILM GEOMETRY ---
+            const segments = 30; // Grid resolution
+            const size = 8;
+            const geometry = new THREE.PlaneGeometry(size, size, segments, segments);
+            geometry.rotateX(-Math.PI / 2); // Lay flat initially
+
+            // Soap Film Material: Translucent, double-sided, shiny
+            const material = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                roughness: 0.1,
+                metalness: 0.1,
+                transparent: true,
+                opacity: 0.65,
+                side: THREE.DoubleSide,
+                wireframe: false
+            });
+
+            const mesh = new THREE.Mesh(geometry, material);
+            scene.add(mesh);
+
+            // Optional: Wireframe overlay to visualize the structural gridshell
+            const wireframeMat = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, transparent: true, opacity: 0.15 });
+            const wireframeMesh = new THREE.Mesh(geometry, wireframeMat);
+            scene.add(wireframeMesh);
+
+            // --- 4. DATA STRUCTURE FOR SIMULATION ---
+            const positionAttribute = geometry.attributes.position;
+            const vertexCount = positionAttribute.count;
+            
+            // Identify boundary vs internal vertices
+            const isBoundary = new Array(vertexCount).fill(false);
+            const gridRows = segments + 1;
+
+            for (let i = 0; i < vertexCount; i++) {
+                const xIdx = i % gridRows;
+                const zIdx = Math.floor(i / gridRows);
+                // If on the outer edges of the plane grid, mark as boundary
+                if (xIdx === 0 || xIdx === segments || zIdx === 0 || zIdx === segments) {
+                    isBoundary[i] = true;
+                }
+            }
+
+            // Fix the boundary into a complex 3D curve (like Frei Otto's wire frames)
+            function applyBoundaryShape() {
+                for (let i = 0; i < vertexCount; i++) {
+                    if (isBoundary[i]) {
+                        const x = positionAttribute.getX(i);
+                        const z = positionAttribute.getZ(i);
+                        
+                        // Mathematical formula to create a dramatic saddle shape (hyperbolic paraboloid)
+                        // Real soap films naturally resolve into variations of this shape
+                        const y = (Math.pow(x, 2) - Math.pow(z, 2)) * 0.15; 
+                        
+                        positionAttribute.setY(i, y);
+                    }
+                }
+                positionAttribute.needsUpdate = true;
+            }
+
+            // Function to initially distort the middle to watch it snap back
+            function distortInternalMesh() {
+                for (let i = 0; i < vertexCount; i++) {
+                    if (!isBoundary[i]) {
+                        // Push vertices way up so we can watch them relax
+                        positionAttribute.setY(i, 4 + Math.random() * 2);
+                    }
+                }
+                positionAttribute.needsUpdate = true;
+            }
+
+            applyBoundaryShape();
+            distortInternalMesh();
+
+            // --- 5. LAPLACIAN RELAXATION (THE PHYSICS ENGINE) ---
+            // Pulls internal points to the center of their 4 neighbors
+            function relaxSoapFilm() {
+                const tempY = new Float32Array(vertexCount);
+
+                // 1. Calculate new positions based on neighbors
+                for (let i = 0; i < vertexCount; i++) {
+                    if (isBoundary[i]) {
+                        tempY[i] = positionAttribute.getY(i); // Keep boundary anchored
+                        continue;
+                    }
+
+                    const xIdx = i % gridRows;
+                    const zIdx = Math.floor(i / gridRows);
+
+                    // Get indices of 4 direct orthogonal neighbors
+                    const top = i - gridRows;
+                    const bottom = i + gridRows;
+                    const left = i - 1;
+                    const right = i + 1;
+
+                    const avgY = (
+                        positionAttribute.getY(top) +
+                        positionAttribute.getY(bottom) +
+                        positionAttribute.getY(left) +
+                        positionAttribute.getY(right)
+                    ) / 4;
+
+                    // Damping/Interpolation factor: determines speed of shrinkage
+                    const currentY = positionAttribute.getY(i);
+                    tempY[i] = currentY + (avgY - currentY) * 0.2; 
+                }
+
+                // 2. Write values back to the actual geometry
+                for (let i = 0; i < vertexCount; i++) {
+                    positionAttribute.setY(i, tempY[i]);
+                }
+
+                positionAttribute.needsUpdate = true;
+                geometry.computeVertexNormals(); // Fixes light reflection dynamically
+            }
+
+            await renderer.init();
+
+            // --- 6. ANIMATION LOOP ---
+            function animate() {
+                requestAnimationFrame(animate);
+                
+                // Continually run relaxation steps to reach steady-state equilibrium
+                relaxSoapFilm();
+
+                renderer.render(scene, camera);
+            }
+
+            animate();
+
+            // --- 7. EVENT LISTENERS ---
+            document.getElementById('resetBtn').addEventListener('click', () => {
+                distortInternalMesh();
+            });
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        init();
+    </script>
+</body>
+</html>

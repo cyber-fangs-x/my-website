@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fang - Graphics Developer</title>
+    <link rel="icon" type="image/x-icon" href="imgs/rei.png">
+    
+    <!-- Google fonts!! -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lekton:ital,wght@0,400;0,700;1,400&family=Silkscreen:wght@400;700&family=Workbench&display=swap" rel="stylesheet">
+    <script src="lib/gl-matrix-min.js" defer></script>
+    <script src="lib/geometry-processing-js/core/vertex.js"></script>
+    <script src="lib/geometry-processing-js/linear-algebra/vector.js"></script>
+    <script src="lib/geometry-processing-js/core/edge.js"></script>
+    <script src="lib/geometry-processing-js/core/face.js"></script>
+    <script src="lib/geometry-processing-js/core/halfedge.js"></script>
+    <script src="lib/geometry-processing-js/core/corner.js"></script>
+    <script src="lib/geometry-processing-js/core/mesh.js"></script>
+    <script src="lib/geometry-processing-js/core/geometry.js"></script>
+    <script src="lib/geometry-processing-js/input/bunny.js"></script>
+    <script src="lib/geometry-processing-js/utils/meshio.js"></script>
+    <script src="lib/geometry-processing-js/utils/colormap.js"></script>
+    <script src="src/geometry-handler.js" defer></script>
+    <script src="src/camera-handler.js" defer></script>
+    <script src="src/webgl.js" defer></script>
+    <script src="src/renderer.js" defer></script>
+    <script src="src/cube.js" defer></script>
+    
+<style>
+:root {
+  --purple-color: rgb(0, 234, 255);
+}
+@font-face {
+    font-family: "HerculesOutline";
+    src: url(fonts/HerculesPixelFontOutline-4nqgK.otf) format('opentype'), url(fonts/HerculesPixelFontRegular-ovAX0.otf) format('opentype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+html, body {
+  background-image: url('imgs/motel_background.jpg');
+  background-attachment: fixed;
+  background-size: cover;
+  text-align: center;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  display: flex;
+  margin: 0;
+}
+
+.main_window {
+  color: gray;
+  font-size: 24px;
+  font-family: 'Courier New', Courier, monospace;
+  width: 800px;
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  box-sizing: border-box;
+}
+
+.banner{
+  color: var(--purple-color);
+  font-size: 70px;
+  font-style: italic;
+  text-shadow: 0 0 10px var(--purple-color), 0 0 20px var(--purple-color), 0 0 30px var(--purple-color);
+  font-family:'HerculesOutline'; 
+  position:absolute;
+  top: -66px;
+  right: -2px;
+  z-index: 10;
+  white-space: nowrap;
+}
+
+.container{
+  background-image: linear-gradient(rgba(0, 0, 0, 0.99), rgba(0, 234, 255, 0.5));
+  border: 3px solid rgba(0, 234, 255, 0.5);
+  box-shadow: 0 0 8px var(--purple-color), 0 0 20px var(--purple-color);
+  flex-grow:1; 
+  align-content: center;
+}
+
+.navigation{
+  background-image: none;
+  background-color: rgba(0, 0, 0, 0.99);
+  flex-basis:100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 10px;
+  margin-bottom: 20px;
+}
+
+.webgl-container {
+  border: 3px inset black;
+  display: inline-block;
+  height: 200px;
+  width: 200px;
+  margin: 50px 30px;
+}
+
+</style>
+</head>
+  <body>
+    <div class="main_window">   
+      <div class="banner">cyber-fang</div>
+      <nav class="navigation container">
+        <a href="index.html" style="color: gray; text-decoration: none; margin-left:50px">back</a>
+      </nav>
+      <div class="container">
+        <div><p>welcome to my site!!</p></div>
+        <div class="webgl-container">
+          <canvas id="cube-canvas" width="200", height="200"></canvas></div>
+        <div class="webgl-container">
+          <canvas id="webgl-canvas" width="200", height="200"></canvas></div>
+      </div>  
+    </div>
+  </body>
+</html>

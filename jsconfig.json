@@ -10,7 +10,7 @@
     },
     "include": [
         "src/**/*",                    
-        "lib/**/*.js"                 
+        "*.js"                 
     ],
     "exclude": [
         "node_modules",

@@ -8,121 +8,36 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Lekton:ital,wght@0,400;0,700;1,400&family=Silkscreen:wght@400;700&family=Workbench&display=swap" rel="stylesheet">
-    <script src="lib/gl-matrix-min.js" defer></script>
-    <script src="lib/geometry-processing-js/core/vertex.js"></script>
-    <script src="lib/geometry-processing-js/linear-algebra/vector.js"></script>
-    <script src="lib/geometry-processing-js/core/edge.js"></script>
-    <script src="lib/geometry-processing-js/core/face.js"></script>
-    <script src="lib/geometry-processing-js/core/halfedge.js"></script>
-    <script src="lib/geometry-processing-js/core/corner.js"></script>
-    <script src="lib/geometry-processing-js/core/mesh.js"></script>
-    <script src="lib/geometry-processing-js/core/geometry.js"></script>
-    <script src="lib/geometry-processing-js/input/bunny.js"></script>
-    <script src="lib/geometry-processing-js/utils/meshio.js"></script>
-    <script src="lib/geometry-processing-js/utils/colormap.js"></script>
-    <script src="src/geometry-handler.js" defer></script>
-    <script src="src/camera-handler.js" defer></script>
-    <script src="src/webgl.js" defer></script>
-    <script src="src/renderer.js" defer></script>
-    <script src="src/cube.js" defer></script>
     
-<style>
-:root {
-  --purple-color: rgb(174, 0, 255);
-}
-@font-face {
-    font-family: "HerculesOutline";
-    src: url(fonts/HerculesPixelFontOutline-4nqgK.otf) format('opentype'), url(fonts/HerculesPixelFontRegular-ovAX0.otf) format('opentype');
-    font-weight: normal;
-    font-style: normal;
-    font-display: swap;
-}
+    <link rel="stylesheet" href="style.css">
+    <script type="module" src="background.js" defer></script>
+    <script type="module" src="torus_demo.js" defer></script>
+    <script type="module" src="cube.js" defer></script>
 
-html, body {
-  background-image: url('imgs/nightcity_background.jpg');
-  background-attachment: fixed;
-  background-size: cover;
-  text-align: center;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  display: flex;
-  margin: 0;
-}
-
-.main_window {
-  color: gray;
-  font-size: 24px;
-  font-family: 'Courier New', Courier, monospace;
-  width: 800px;
-  position: relative;
-  display: flex;
-  flex-wrap: wrap;
-  box-sizing: border-box;
-}
-
-.banner{
-  color: rgb(174, 0, 255);
-  font-size: 70px;
-  font-style: italic;
-  text-shadow: 0 0 10px var(--purple-color), 0 0 20px var(--purple-color), 0 0 30px var(--purple-color);
-  font-family:'HerculesOutline'; 
-  position:absolute;
-  top: -66px;
-  right: -2px;
-  z-index: 10;
-  white-space: nowrap;
-}
-
-.container{
-  background-image: linear-gradient(rgba(0, 0, 0, 0.99), rgba(174, 0, 255, 0.8));
-  border: 3px solid rgba(174, 0, 255, 0.8);
-  box-shadow: 0 0 8px var(--purple-color), 0 0 20px var(--purple-color);
-  flex-grow:1; 
-  align-content: center;
-}
-
-.navigation{
-  background-image: none;
-  background-color: rgba(0, 0, 0, 0.99);
-  flex-basis:100%;
-  display: flex;
-  flex-direction: row;
-  justify-content: space-around;
-  align-items: center;
-  padding: 10px;
-  margin-bottom: 20px;
-}
-
-.webgl-container {
-  border: 3px inset black;
-  display: inline-block;
-  height: 200px;
-  width: 200px;
-  margin: 50px 30px;
-}
-
-</style>
 </head>
-  <body>
-    <div class="main_window">   
+  <body data-theme-color="purple">
+    <!-- Background Scene -->
+    <div id="background-container"></div>  
+    
+    <!-- Main Content Window -->
+    <div class="main-window">
+      <!-- Name Banner -->
       <div class="banner">cyber-fang</div>
+      
+      <!-- Navigation Bar -->
       <nav class="navigation container">
         <a href="index.html" style="color: gray; text-decoration: none;">home</a>
         <a href="about.html" style="color: gray; text-decoration: none;">about me</a>
         <a href="projects.html" style="color: gray; text-decoration: none;">projects</a>
         <a href="contact.html" style="color: gray; text-decoration: none;">contact</a>
       </nav>
-      <div class="container">
-        <div><p>welcome to my site!!</p></div>
-        <div class="webgl-container">
-          <canvas id="cube-canvas" width="200", height="200"></canvas></div>
-        <div class="webgl-container">
-          <canvas id="webgl-canvas" width="200", height="200"></canvas></div>
+
+      <!-- Content Area -->
+      <div class="container" style="font-family: monospace; height: 800px;">
+        <div><p>welcome to my site!! Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since 1966, when designers at Letraset and James Mosley, the librarian at St Bride Printing Library in London, took a 1914 Cicero translation and scrambled it to make dummy text for Letraset's Body Type sheets. It has survived not only many decades, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised thanks to these sheets and more recently with desktop publishing software like Aldus PageMaker and Microsoft Word including versions of Lorem Ipsum.</p></div>
+        <div class="graphics-container" id="torus-container"></div>
+        <div class="graphics-container" id="cube-container"></div>
       </div>  
-      <div class="container" style="margin-left:20px; ">
-        <img src="imgs/mary.gif" alt="blue mary" style="height:200px">
-      </div>
     </div>
   </body>
 </html>
