@@ -10,6 +10,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Lekton:ital,wght@0,400;0,700;1,400&family=Silkscreen:wght@400;700&family=Workbench&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="../style.css">
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script>eruda.init();</script>
     <script type="module" src="../background.js" defer></script>
     <script type="module" src="../cube.js" defer></script>
 
@@ -32,8 +34,13 @@
       </nav>
 
       <!-- Content Area -->
-      <div class="container" style="font-family: monospace; height: 800px;">
+      <div class="project-container" style="font-family: monospace; height: 800px;">
         <div class="graphics-container" id="cube-container"></div>
+        <div class="project-ui">
+          <div id="cube-gui-container"></div>
+          <h2>Project 1: Cube Explorer</h2>
+          <p>Welcome to the Cube Explorer! This is a simple 3D cube visualization project built with Three.js.</p>
+        </div>
       </div>  
     </div>
   </body>

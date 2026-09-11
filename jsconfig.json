@@ -11,7 +11,7 @@
     "include": [
         "src/**/*",                    
         "*.js"                 
-    ],
+, "utils/arcball-controls-utils.js", "utils/gui-utils.js"    ],
     "exclude": [
         "node_modules",
         "**/linear-algebra-asm.js",

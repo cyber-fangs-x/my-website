@@ -49,11 +49,6 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 async function init() {
-    if (!navigator.gpu) {
-        console.error("WebGPU is not supported in this browser.");
-        return;
-    }
-
      // Canvas Setup
     const container = document.getElementById('background-container');
     const w = container.clientWidth;

@@ -64,6 +64,21 @@ body {
   justify-content: center;
 }
 
+.project-container{
+  background-color: gray;
+  border: 3px solid color-mix(in srgb, var(--primary-color) 80%, transparent);
+  box-shadow: 0 0 8px var(--primary-color), 0 0 20px var(--primary-color);
+  padding: 64px 24px;
+  display: flex;
+}
+
+.project-ui{
+  color: black;
+  flex: 1;
+  padding: 24px;
+  text-align: left;
+}
+
 .content-window {
   border: 3px solid yellow;
   display: grid;
@@ -84,10 +99,10 @@ body {
 }
 
 .graphics-container {
-  border-top: 4px solid #dfdfdf;
-  border-left: 4px solid #dfdfdf;
-  border-right: 4px solid #5a5a5a; 
-  border-bottom: 4px solid #5a5a5a; 
+  border-top: 4px solid #5a5a5a;
+  border-left: 4px solid #5a5a5a;
+  border-right: 4px solid #dfdfdf;
+  border-bottom: 4px solid #dfdfdf;
   height: 300px;
   width: 300px;
 }

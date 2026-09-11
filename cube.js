@@ -4,6 +4,8 @@ import {
     time, sin, positionLocal, positionWorld, normalWorld, cameraPosition
 } from "three/tsl"
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js"
+import { createArcballControls, enableArcballOnFirstInteraction } from "./utils/arcball-controls-utils.js"
+import { createGUI, addArcballGizmoToggle } from "./utils/gui-utils.js"
 
 // ============================================================================
 // MATERIAL MODE FLAGS
@@ -21,11 +23,6 @@ const METAL_COLOR = 0xae00ff; // site accent purple
 const RIM_COLOR = 0xffffff;
 
 async function init() {
-    if (!navigator.gpu) {
-        console.error("WebGPU is not supported in this browser.");
-        return;
-    }
-
     // Canvas Setup
     const container = document.getElementById('cube-container');
     const w = container.clientWidth;
@@ -67,6 +64,26 @@ async function init() {
     const cube = new THREE.Mesh(geometry, material);
     scene.add(cube);
 
+    // Arcball controls — the cube auto-spins (see animate() below) until the
+    // user clicks (desktop) or taps (mobile) its canvas, at which point
+    // control hands over to drag-to-rotate / wheel-or-pinch-to-zoom via a
+    // true virtual trackball. See arcball-controls-utils.js for the
+    // "why"/"how" of these helpers — they're generic over any
+    // camera/canvas/scene triple, not cube-specific.
+    const controls = createArcballControls(camera, renderer.domElement, scene, {
+        minDistance: 1.5,
+        maxDistance: 8,
+    });
+    // Hand off control to the user on the first click/tap.
+    enableArcballOnFirstInteraction(renderer.domElement, controls); 
+
+    // Debug/demo GUI — lives in its own #cube-gui-container element (see
+    // index.html), not overlaid on the canvas. See gui-utils.js for the
+    // "why"/"how" and for the pattern to follow when adding more controls.
+    const guiContainer = document.getElementById('cube-gui-container');
+    const gui = createGUI(guiContainer);
+    addArcballGizmoToggle(gui, controls);
+
     // Post Processing
     const render_pipeline = new THREE.RenderPipeline(renderer);
     const scene_pass = pass(scene, camera);
@@ -84,8 +101,19 @@ async function init() {
 
     // Animation loop
     function animate() {
-        cube.rotation.x += 0.006;
-        cube.rotation.y += 0.01;
+        // controls.enabled doubles as our "has the user taken over?" flag
+        // (see arcball-controls-utils.js) — auto-spin until they click/tap,
+        // then let ArcballControls drive the camera instead. ArcballControls
+        // drives its own damping/focus animations internally and doesn't
+        // require update() to be called externally, but calling it is
+        // harmless and keeps its gizmo position in sync with `target` if
+        // that's ever changed elsewhere.
+        if (controls.enabled) {
+            controls.update();
+        } else {
+            cube.rotation.x += 0.006;
+            cube.rotation.y += 0.01;
+        }
         render_pipeline.render(scene, camera);
     }
     renderer.setAnimationLoop(animate);

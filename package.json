@@ -24,6 +24,7 @@
   },
   "homepage": "https://github.com/cyber-fangs-x/my-website#readme",
   "dependencies": {
+    "lil-gui": "^0.21.0",
     "three": "^0.185.1"
   },
   "devDependencies": {
