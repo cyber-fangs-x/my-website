@@ -1,20 +1,19 @@
 import * as THREE from "three/webgpu"
 import {
-    pass, Fn, uniform, color, float, vec3, mix,
+    Fn, uniform, color, float, vec3, mix,
     time, sin, positionLocal, positionWorld, normalWorld, cameraPosition
 } from "three/tsl"
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js"
-import { createArcballControls, enableArcballOnFirstInteraction } from "./utils/arcball-controls-utils.js"
-import { createGUI, addArcballGizmoToggle } from "./utils/gui-utils.js"
+import { Engine } from "./utils/engine-utils.js"
+import { createArcballControls, enableArcballOnFirstInteraction } from "./utils/arcball-utils.js"
+import { createGUI, addArcballGizmoToggle, addDebugVisualHelpersToggle } from "./utils/gui-utils.js"
+import {
+    debugAssert, debugPrintSceneGraph, debugPrintTSLNode,
+    debugAttachVisualHelpers, debugCreateMaterial
+} from "./utils/debug_utils.js"
 
-// ============================================================================
-// MATERIAL MODE FLAGS
-//
-// This is the switch mentioned in the brief: flip these two booleans (by
-// hand, in source) to change which Node Material the cube is built with.
-// GLASS_MODE takes priority if both happen to be true; if both are false the
-// cube falls back to a plain grey MeshPhysicalNodeMaterial.
-// ============================================================================
+// Flip these to change which Node Material the cube uses. GLASS_MODE wins if
+// both are true; both false falls back to a plain grey material.
 let GLASS_MODE = true;
 let METALLIC_MODE = false;
 
@@ -23,25 +22,8 @@ const METAL_COLOR = 0xae00ff; // site accent purple
 const RIM_COLOR = 0xffffff;
 
 async function init() {
-    // Canvas Setup
-    const container = document.getElementById('cube-container');
-    const w = container.clientWidth;
-    const h = container.clientHeight;
-    const renderer = new THREE.WebGPURenderer({ antialias: true });
-    renderer.setSize(w, h, false);
-    container.appendChild(renderer.domElement);
-    await renderer.init();
-
-    // Three.js Setup
-    const fov = 75;
-    const aspect = w / h;
-    const near = 0.1;
-    const far = 1000;
-    const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-    camera.position.set(0, 0, 3.2);
-
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x000000);
+    const engine = await new Engine().init('cube-container', { cameraPosition: [0, 0, 3.2] });
+    const { renderer, camera, scene } = engine;
 
     // Environment map — both glass (transmission/refraction) and metal
     // (reflections) need something in the world to sample, or they just
@@ -64,71 +46,52 @@ async function init() {
     const cube = new THREE.Mesh(geometry, material);
     scene.add(cube);
 
-    // Arcball controls — the cube auto-spins (see animate() below) until the
-    // user clicks (desktop) or taps (mobile) its canvas, at which point
-    // control hands over to drag-to-rotate / wheel-or-pinch-to-zoom via a
-    // true virtual trackball. See arcball-controls-utils.js for the
-    // "why"/"how" of these helpers — they're generic over any
-    // camera/canvas/scene triple, not cube-specific.
+    // Cube auto-spins (see engine.run() below) until the user clicks/taps its
+    // canvas, at which point control hands over to arcball drag-to-rotate.
     const controls = createArcballControls(camera, renderer.domElement, scene, {
         minDistance: 1.5,
         maxDistance: 8,
     });
-    // Hand off control to the user on the first click/tap.
-    enableArcballOnFirstInteraction(renderer.domElement, controls); 
+    enableArcballOnFirstInteraction(renderer.domElement, controls);
 
-    // Debug/demo GUI — lives in its own #cube-gui-container element (see
-    // index.html), not overlaid on the canvas. See gui-utils.js for the
-    // "why"/"how" and for the pattern to follow when adding more controls.
+    // Debug/demo GUI lives in its own #cube-gui-container element (see
+    // index.html), not overlaid on the canvas.
     const guiContainer = document.getElementById('cube-gui-container');
     const gui = createGUI(guiContainer);
     addArcballGizmoToggle(gui, controls);
 
-    // Post Processing
-    const render_pipeline = new THREE.RenderPipeline(renderer);
-    const scene_pass = pass(scene, camera);
-    const scene_pass_color = scene_pass.getTextureNode('output');
-    render_pipeline.outputNode = scene_pass_color;
+    // DEBUG (see utils/debug_utils.js — DEBUG_ENABLED flag lives there)
+    debugAssert(cube.geometry.attributes.position, "cube must have a position attribute");
+    debugPrintSceneGraph(scene);
 
-    // Handle window resize
-    window.addEventListener('resize', () => {
-        const newWidth = container.clientWidth;
-        const newHeight = container.clientHeight;
-        camera.aspect = newWidth / newHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(newWidth, newHeight, false);
-    });
+    const helpers = debugAttachVisualHelpers(cube, { axesSize: 1.2 });
+    if (helpers) addDebugVisualHelpersToggle(gui, helpers);
+
+    const debugNormalMaterial = debugCreateMaterial(normalWorld);
+    if (debugNormalMaterial) {
+        const debugMaterialState = { previewDebugMaterial: false };
+        gui.add(debugMaterialState, "previewDebugMaterial")
+            .name("Preview Normal Debug Material")
+            .onChange((on) => { cube.material = on ? debugNormalMaterial : material; });
+    }
 
     // Animation loop
-    function animate() {
-        // controls.enabled doubles as our "has the user taken over?" flag
-        // (see arcball-controls-utils.js) — auto-spin until they click/tap,
-        // then let ArcballControls drive the camera instead. ArcballControls
-        // drives its own damping/focus animations internally and doesn't
-        // require update() to be called externally, but calling it is
-        // harmless and keeps its gizmo position in sync with `target` if
-        // that's ever changed elsewhere.
+    engine.run(() => {
+        // controls.enabled doubles as "has the user taken over?" — auto-spin
+        // until they click/tap, then let ArcballControls drive the camera.
         if (controls.enabled) {
             controls.update();
         } else {
             cube.rotation.x += 0.006;
             cube.rotation.y += 0.01;
         }
-        render_pipeline.render(scene, camera);
-    }
-    renderer.setAnimationLoop(animate);
+    });
 }
 
-// ============================================================================
-// TSL / Node Material construction
-//
-// A THREE.js Node Material (MeshPhysicalNodeMaterial here) is configured by
-// assigning TSL node graphs — small functions built from `Fn`, `uniform`,
-// math ops, and attribute accessors like `positionLocal` / `normalWorld` —
-// to its *Node properties (colorNode, roughnessNode, positionNode, ...)
-// instead of plain numeric/texture values. Those graphs are compiled to
-// WGSL/GLSL shader code by the renderer.
-// ============================================================================
+// Node Materials are configured by assigning TSL node graphs (Fn/uniform/
+// math ops/attribute accessors like positionLocal, normalWorld) to *Node
+// properties (colorNode, roughnessNode, ...) instead of plain values —
+// those graphs get compiled to WGSL/GLSL by the renderer.
 function createCubeMaterial() {
     const material = new THREE.MeshPhysicalNodeMaterial();
 
@@ -178,6 +141,9 @@ function createCubeMaterial() {
         material.roughnessNode = float(0.6);
         material.emissiveNode = vec3(0, 0, 0);
     }
+
+    // --- Debug: inspect the composed node graph (see utils/debug_utils.js) ---
+    debugPrintTSLNode(material.colorNode);
 
     return material;
 }

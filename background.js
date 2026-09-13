@@ -1,6 +1,7 @@
 import * as THREE from "three/webgpu"
-import { pass, instancedBufferAttribute, uniform, shapeCircle, color, pointUV, positionLocal, uv, time, sin, vec3, vec2, attribute } from "three/tsl"
+import { instancedBufferAttribute, uniform, shapeCircle, color, pointUV, positionLocal, uv, time, sin, vec3, vec2, attribute } from "three/tsl"
 import { bloom } from "three/addons/tsl/display/BloomNode.js";
+import { Engine } from "./utils/engine-utils.js"
 
 const PURPLE = 0x7900B2; //0xAE00FF;
 const BLUE = 0x00B2FF; //0x00D4FF;
@@ -22,10 +23,10 @@ const adjustColorCSS = (num, factor = 1.43) => {
     return toCssHex(newHex);
 };
 
-document.addEventListener("DOMContentLoaded", () => {
+function applyThemeColor() {
     const body = document.body;
     const themeColor = body.getAttribute("data-theme-color");
-    
+
     switch (themeColor) {
         case "purple":
             THIS_COLOR = PURPLE;
@@ -46,27 +47,25 @@ document.addEventListener("DOMContentLoaded", () => {
         default:
             THIS_COLOR = WHITE; // Default to purple if no valid theme color is found
     }
-});
+}
+
+// Run immediately if DOMContentLoaded already fired, rather than only ever
+// listening for it — guards against a race if this script ever gains an
+// async dependency that delays its own execution past that event.
+if (document.readyState === 'loading') {
+    document.addEventListener("DOMContentLoaded", applyThemeColor);
+} else {
+    applyThemeColor();
+}
 
 async function init() {
-     // Canvas Setup
-    const container = document.getElementById('background-container');
-    const w = container.clientWidth;
-    const h = container.clientHeight;
-    const renderer = new THREE.WebGPURenderer({ antialias: true });
-    renderer.setSize(w, h, false);
-    container.appendChild(renderer.domElement);
-    await renderer.init();
-    
-    // Three.js Setup
-    const fov = 75;
-    const aspect = w / h;
-    const near = 0.1;
-    const far = 1000;
-    const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(BLACK);
+    // buildOutputNode layers this scene's bloom on top of the plain render,
+    // through Engine's own RenderPipeline setup rather than around it.
+    const engine = await new Engine().init('background-container', {
+        backgroundColor: BLACK,
+        buildOutputNode: (sceneColor) => sceneColor.add(bloom(sceneColor, 0.5, 0.4, 0.01)),
+    });
+    const { camera, scene } = engine;
 
     // Grid Background
     const bottom_grid = new THREE.GridHelper(1000, 100, THIS_COLOR, THIS_COLOR);
@@ -81,23 +80,7 @@ async function init() {
     scene.add(top_grid);
 
     const fog = new THREE.FogExp2(0x000000, 0.005);
-    scene.fog = fog;       
-
-    //Glow Effect
-    const render_pipeline = new THREE.RenderPipeline(renderer);
-    const scene_pass = pass(scene, camera);
-    const scene_pass_color = scene_pass.getTextureNode('output');
-    const bloomPass = bloom(scene_pass_color, 0.5, 0.4, 0.01);
-    render_pipeline.outputNode = scene_pass_color.add(bloomPass);
-
-    // Handle window resize
-    window.addEventListener('resize', () => {
-        const newWidth = container.clientWidth;
-        const newHeight = container.clientHeight;
-        camera.aspect = newWidth / newHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(newWidth, newHeight, false);
-    });
+    scene.fog = fog;
 
     // Camera Scroll Effect
     function updateCameraPosition() {
@@ -111,12 +94,7 @@ async function init() {
 
     // Particle Animation
 
-    
-    function animate(t=0) {
-        updateCameraPosition();
-        render_pipeline.render(scene, camera);
-    }
-    renderer.setAnimationLoop(animate);
+    engine.run(() => updateCameraPosition());
 }
 
 init();
