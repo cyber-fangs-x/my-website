@@ -33,6 +33,25 @@ import * as THREE from "three/webgpu"
 // places in this file that ever touch `window` — every other function
 // below gets its classes as an ordinary local value from one of them, so
 // this global-scope wrinkle stays contained to those two functions.
+//
+// The vendored library itself stays untouched, untyped .js under public/
+// (out of scope for this project's TS port), so every shape below that
+// ultimately comes from it — Mesh, Geometry, MeshIO, and the polygon-soup/
+// vertex/face objects buildThreeMesh() reads — is deliberately `any`,
+// matching this project's chosen "ambient any-shim" strategy for untyped
+// external code (see types/three-shims.d.ts for the same approach applied
+// to three/webgpu & three/tsl).
+
+// One-off augmentation for the transient bridge property bridgeGlobals()
+// stashes on `window` — see the file header above for why this needs to
+// exist at all. Declared optional and deleted again by bridgeGlobals()
+// itself immediately after reading it, so it's never actually present
+// outside that one synchronous window.
+declare global {
+    interface Window {
+        __gpLibBridge?: Record<string, any>;
+    }
+}
 
 const GP_LIB_BASE = `${import.meta.env.BASE_URL}lib/geometry-processing-js-master/`;
 
@@ -41,7 +60,7 @@ const GP_LIB_BASE = `${import.meta.env.BASE_URL}lib/geometry-processing-js-maste
 // below rather than fired off in parallel, so dependency order between
 // files (e.g. core/mesh.js referencing the bare `Vertex`/`Edge`/... globals
 // core/vertex.js etc. define) is always respected.
-function loadScript(src) {
+function loadScript(src: string): Promise<void> {
     return new Promise((resolve, reject) => {
         const script = document.createElement('script');
         script.src = src;
@@ -51,7 +70,7 @@ function loadScript(src) {
     });
 }
 
-async function loadScriptsInOrder(paths) {
+async function loadScriptsInOrder(paths: string[]): Promise<void> {
     for (const path of paths) {
         await loadScript(GP_LIB_BASE + path);
     }
@@ -63,17 +82,17 @@ async function loadScriptsInOrder(paths) {
 // more inline classic script that *can* see them as bare identifiers. Runs
 // synchronously — an inline script (no `src`) executes immediately when
 // inserted, so the bridged values are readable right after appendChild.
-function bridgeGlobals(names) {
+function bridgeGlobals(names: string[]): Record<string, any> {
     const script = document.createElement('script');
     script.textContent = `window.__gpLibBridge = { ${names.join(', ')} };`;
     document.head.appendChild(script);
     const bridged = window.__gpLibBridge;
     delete window.__gpLibBridge;
     document.head.removeChild(script);
-    return bridged;
+    return bridged!;
 }
 
-let geometryProcessingLibPromise = null;
+let geometryProcessingLibPromise: Promise<{ Mesh: any; Geometry: any; MeshIO: any }> | null = null;
 
 /**
  * loadGeometryProcessingLib()
@@ -91,11 +110,10 @@ let geometryProcessingLibPromise = null;
  * bodies, but since this loader never calls those methods, that heavier
  * dependency chain is left to loadLinearAlgebraLib() (below) instead.
  *
- * @returns {Promise<{Mesh: Function, Geometry: Function, MeshIO: Object}>}
- *   the vendored library's classes, read off `window` once its scripts
- *   have run.
+ * @returns the vendored library's classes, read off `window` once its
+ *   scripts have run.
  */
-export function loadGeometryProcessingLib() {
+export function loadGeometryProcessingLib(): Promise<{ Mesh: any; Geometry: any; MeshIO: any }> {
     if (!geometryProcessingLibPromise) {
         geometryProcessingLibPromise = loadScriptsInOrder([
             'linear-algebra/vector.js',
@@ -107,12 +125,16 @@ export function loadGeometryProcessingLib() {
             'core/mesh.js',
             'core/geometry.js',
             'utils/meshio.js',
-        ]).then(() => bridgeGlobals(['Mesh', 'Geometry', 'MeshIO']));
+        ]).then(() => bridgeGlobals(['Mesh', 'Geometry', 'MeshIO'])) as Promise<{ Mesh: any; Geometry: any; MeshIO: any }>;
     }
     return geometryProcessingLibPromise;
 }
 
-let linearAlgebraLibPromise = null;
+let linearAlgebraLibPromise: Promise<{
+    DenseMatrix: any; SparseMatrix: any; Triplet: any;
+    Complex: any; ComplexSparseMatrix: any; ComplexTriplet: any;
+    EmscriptenMemoryManager: any;
+}> | null = null;
 
 /**
  * loadLinearAlgebraLib()
@@ -135,12 +157,12 @@ let linearAlgebraLibPromise = null;
  * since the JS garbage collector can't reach them. That lifecycle is
  * algorithm-specific (which matrices to keep alive, and when to free the
  * rest), so it belongs in each algorithm script, not in a generic loader.
- *
- * @returns {Promise<{DenseMatrix: Function, SparseMatrix: Function,
- *   Triplet: Function, Complex: Function, ComplexSparseMatrix: Function,
- *   ComplexTriplet: Function, EmscriptenMemoryManager: Function}>}
  */
-export function loadLinearAlgebraLib() {
+export function loadLinearAlgebraLib(): Promise<{
+    DenseMatrix: any; SparseMatrix: any; Triplet: any;
+    Complex: any; ComplexSparseMatrix: any; ComplexTriplet: any;
+    EmscriptenMemoryManager: any;
+}> {
     if (!linearAlgebraLibPromise) {
         linearAlgebraLibPromise = loadScriptsInOrder([
             'linear-algebra/linear-algebra-asm.js',
@@ -153,7 +175,11 @@ export function loadLinearAlgebraLib() {
             'DenseMatrix', 'SparseMatrix', 'Triplet',
             'Complex', 'ComplexSparseMatrix', 'ComplexTriplet',
             'EmscriptenMemoryManager',
-        ]));
+        ])) as Promise<{
+            DenseMatrix: any; SparseMatrix: any; Triplet: any;
+            Complex: any; ComplexSparseMatrix: any; ComplexTriplet: any;
+            EmscriptenMemoryManager: any;
+        }>;
     }
     return linearAlgebraLibPromise;
 }
@@ -168,16 +194,22 @@ export function loadLinearAlgebraLib() {
  * identically no matter which page a graphics script runs on, and survives
  * `npm run build` unchanged as long as the file lives under public/.
  *
- * @param {string} filepath - path under the site root, e.g. 'assets/bunny.obj'.
- * @returns {Promise<string>} the file's contents.
+ * @param filepath - path under the site root, e.g. 'assets/bunny.obj'.
+ * @returns the file's contents.
  */
-export async function fetchObjText(filepath) {
+export async function fetchObjText(filepath: string): Promise<string> {
     const url = import.meta.env.BASE_URL + filepath;
     const response = await fetch(url);
     if (!response.ok) {
         throw new Error(`asset-loader: failed to fetch "${url}" (${response.status} ${response.statusText})`);
     }
     return response.text();
+}
+
+/** A polygon soup: a flat, 0-indexed triangle list read from an .obj file. */
+export interface PolygonSoup {
+    v: any[];
+    f: number[];
 }
 
 /**
@@ -189,10 +221,9 @@ export async function fetchObjText(filepath) {
  * that failure via a browser `alert()` and returns `undefined`, so this
  * turns that into a real, catchable Error instead.
  *
- * @param {string} objText
- * @returns {Promise<{v: Object[], f: number[]}>} the polygon soup.
+ * @returns the polygon soup.
  */
-export async function parsePolygonSoup(objText) {
+export async function parsePolygonSoup(objText: string): Promise<PolygonSoup> {
     const { MeshIO } = await loadGeometryProcessingLib();
     const polygonSoup = MeshIO.readOBJ(objText);
     if (!polygonSoup) {
@@ -210,10 +241,9 @@ export async function parsePolygonSoup(objText) {
  * which is what keeps this mesh, its eventual Geometry, and the THREE.Mesh
  * built from them all aligned to the same vertex/face numbering.
  *
- * @param {{v: Object[], f: number[]}} polygonSoup
- * @returns {Promise<Object>} the built Mesh instance.
+ * @returns the built Mesh instance.
  */
-export async function buildGpMesh(polygonSoup) {
+export async function buildGpMesh(polygonSoup: PolygonSoup): Promise<any> {
     const { Mesh } = await loadGeometryProcessingLib();
     const gpMesh = new Mesh();
     const ok = gpMesh.build(polygonSoup);
@@ -239,12 +269,15 @@ export async function buildGpMesh(polygonSoup) {
  * reading positions from `gpGeometry.positions`, never `polygonSoup.v`
  * directly, so it always sees the final, post-normalization coordinates.
  *
- * @param {Object} gpMesh - a Mesh already built via buildGpMesh().
- * @param {{v: Object[], f: number[]}} polygonSoup - the same polygon soup gpMesh was built from.
- * @param {boolean} [normalizePositions=true]
- * @returns {Promise<Object>} the built Geometry instance.
+ * @param gpMesh - a Mesh already built via buildGpMesh().
+ * @param polygonSoup - the same polygon soup gpMesh was built from.
+ * @returns the built Geometry instance.
  */
-export async function buildGpGeometry(gpMesh, polygonSoup, normalizePositions = true) {
+export async function buildGpGeometry(
+    gpMesh: any,
+    polygonSoup: PolygonSoup,
+    normalizePositions: boolean = true,
+): Promise<any> {
     const { Geometry } = await loadGeometryProcessingLib();
     return new Geometry(gpMesh, polygonSoup.v, normalizePositions);
 }
@@ -266,11 +299,10 @@ export async function buildGpGeometry(gpMesh, polygonSoup, normalizePositions = 
  * script builds and assigns itself; a generic loader has no business
  * guessing one.
  *
- * @param {Object} gpMesh - a Mesh already built via buildGpMesh().
- * @param {Object} gpGeometry - a Geometry already built via buildGpGeometry() for gpMesh.
- * @returns {THREE.Mesh}
+ * @param gpMesh - a Mesh already built via buildGpMesh().
+ * @param gpGeometry - a Geometry already built via buildGpGeometry() for gpMesh.
  */
-export function buildThreeMesh(gpMesh, gpGeometry) {
+export function buildThreeMesh(gpMesh: any, gpGeometry: any): any {
     const vertexCount = gpMesh.vertices.length;
     const positions = new Float32Array(vertexCount * 3);
     for (const v of gpMesh.vertices) {
@@ -298,6 +330,30 @@ export function buildThreeMesh(gpMesh, gpGeometry) {
     return new THREE.Mesh(bufferGeometry);
 }
 
+/** Options accepted by {@link loadObjAsset}. */
+export interface LoadObjAssetOptions {
+    /** forwarded to buildGpGeometry(). @default true */
+    normalizePositions?: boolean;
+    /**
+     * also await loadLinearAlgebraLib() before returning, for a script that
+     * will call gpGeometry.laplaceMatrix()/massMatrix()/complexLaplaceMatrix().
+     * @default false
+     */
+    linearAlgebra?: boolean;
+}
+
+/**
+ * Everything {@link loadObjAsset} builds from one .obj file. `threeMesh` is
+ * untyped (`any`): its real runtime type is THREE.Mesh, but three ships no
+ * types for three/webgpu at all (see types/three-shims.d.ts).
+ */
+export interface LoadedObjAsset {
+    threeMesh: any;
+    gpMesh: any;
+    gpGeometry: any;
+    polygonSoup: PolygonSoup;
+}
+
 /**
  * loadObjAsset(filepath, options)
  *
@@ -311,16 +367,9 @@ export function buildThreeMesh(gpMesh, gpGeometry) {
  * build THREE.Mesh) — call the individual functions directly instead if a
  * script only needs one step, or needs to re-run just one of them.
  *
- * @param {string} filepath - path under the site root, e.g. 'assets/bunny.obj'.
- * @param {Object} [options]
- * @param {boolean} [options.normalizePositions=true] - forwarded to buildGpGeometry().
- * @param {boolean} [options.linearAlgebra=false] - also await loadLinearAlgebraLib()
- *   before returning, for a script that will call gpGeometry.laplaceMatrix()/
- *   massMatrix()/complexLaplaceMatrix().
- * @returns {Promise<{threeMesh: THREE.Mesh, gpMesh: Object, gpGeometry: Object,
- *   polygonSoup: {v: Object[], f: number[]}}>}
+ * @param filepath - path under the site root, e.g. 'assets/bunny.obj'.
  */
-export async function loadObjAsset(filepath, options = {}) {
+export async function loadObjAsset(filepath: string, options: LoadObjAssetOptions = {}): Promise<LoadedObjAsset> {
     const { normalizePositions = true, linearAlgebra = false } = options;
 
     await loadGeometryProcessingLib();

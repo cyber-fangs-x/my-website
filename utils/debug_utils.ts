@@ -15,14 +15,13 @@ const DEBUG_ENABLED = true;
  * console. Extra `...data` is logged via `console.error` first, since Error
  * messages only stringify their contents.
  *
- * @param {*} condition - value coerced to boolean; falsy triggers the assertion.
- * @param {string} message - human-readable description of the violated invariant.
- * @param {...*} data - arbitrary extra values logged via console.error for
+ * @param condition - value coerced to boolean; falsy triggers the assertion.
+ * @param message - human-readable description of the violated invariant.
+ * @param data - arbitrary extra values logged via console.error for
  *   debugging context before the Error is thrown.
- * @returns {void}
- * @throws {Error} when `condition` is falsy and DEBUG_ENABLED is true.
+ * @throws when `condition` is falsy and DEBUG_ENABLED is true.
  */
-export function debugAssert(condition, message, ...data) {
+export function debugAssert(condition: unknown, message: string, ...data: unknown[]): void {
     if (!DEBUG_ENABLED) return;
     if (condition) return;
 
@@ -39,17 +38,18 @@ export function debugAssert(condition, message, ...data) {
  * depth) and logs each node — type, truncated uuid, visibility, transform —
  * as a nested `console.group` so DevTools renders a collapsible tree.
  *
- * @param {THREE.Object3D} rootObject - root of the hierarchy to print; itself included.
- * @returns {void}
+ * @param rootObject - root of the hierarchy to print; itself included.
+ *   Untyped (`any`): three ships no types for three/webgpu (see
+ *   types/three-shims.d.ts).
  */
-export function debugPrintSceneGraph(rootObject) {
+export function debugPrintSceneGraph(rootObject: any): void {
     if (!DEBUG_ENABLED) return;
     if (rootObject == null) {
         console.warn("[debug_utils] debugPrintSceneGraph: rootObject is null/undefined");
         return;
     }
 
-    const printNode = (object, depth) => {
+    const printNode = (object: any, depth: number) => {
         const indent = "  ".repeat(depth);
         const type = object.type || object.constructor?.name || "Object3D";
         const uuid = object.uuid ? object.uuid.slice(0, 8) : "n/a";
@@ -75,6 +75,12 @@ export function debugPrintSceneGraph(rootObject) {
     printNode(rootObject, 0);
 }
 
+/** Options accepted by {@link debugPrintTSLNode}. */
+export interface DebugPrintTSLNodeOptions {
+    /** maximum child-node recursion depth. @default 3 */
+    maxDepth?: number;
+}
+
 /**
  * debugPrintTSLNode(tslNode, options)
  *
@@ -87,16 +93,12 @@ export function debugPrintSceneGraph(rootObject) {
  * against cycles with a visited-`uuid` Set. Can't show compiled shader
  * variable names, since those only exist after a real `.build()` pass.
  *
- * @typedef {Object} DebugPrintTSLNodeOptions
- * @property {number} [maxDepth=3] - maximum child-node recursion depth.
- *
- * @param {Object} tslNode - a TSL node instance (e.g. from uniform(), color(),
- *   Fn(), or any composed node graph). Duck-typed, not type-checked, since
- *   TSL nodes don't share one common exported base class to import here.
- * @param {DebugPrintTSLNodeOptions} [options]
- * @returns {void}
+ * @param tslNode - a TSL node instance (e.g. from uniform(), color(),
+ *   Fn(), or any composed node graph). Duck-typed, not type-checked
+ *   (`any`), since TSL nodes don't share one common exported base class to
+ *   import here — see types/three-shims.d.ts.
  */
-export function debugPrintTSLNode(tslNode, options = {}) {
+export function debugPrintTSLNode(tslNode: any, options: DebugPrintTSLNodeOptions = {}): void {
     if (!DEBUG_ENABLED) return;
     if (tslNode == null) {
         console.warn("[debug_utils] debugPrintTSLNode: tslNode is null/undefined");
@@ -104,9 +106,9 @@ export function debugPrintTSLNode(tslNode, options = {}) {
     }
 
     const { maxDepth = 3 } = options;
-    const visited = new Set();
+    const visited = new Set<string>();
 
-    const describe = (node) => {
+    const describe = (node: any): string => {
         try {
             const type = node.type || node.nodeType || node.constructor?.name || "Node";
             const uuid = node.uuid ? node.uuid.slice(0, 8) : "n/a";
@@ -119,12 +121,12 @@ export function debugPrintTSLNode(tslNode, options = {}) {
                 }
             }
             return `${type} value=${value} uuid=${uuid}`;
-        } catch (err) {
+        } catch (err: any) {
             return `<unreadable node: ${err.message}>`;
         }
     };
 
-    const printNode = (node, depth) => {
+    const printNode = (node: any, depth: number) => {
         try {
             if (node?.uuid) {
                 if (visited.has(node.uuid)) {
@@ -157,6 +159,26 @@ export function debugPrintTSLNode(tslNode, options = {}) {
     printNode(tslNode, 0);
 }
 
+/** Options accepted by {@link debugAttachVisualHelpers}. */
+export interface DebugVisualHelpersOptions {
+    wireframeColor?: number;
+    boxColor?: number;
+    axesSize?: number;
+}
+
+/**
+ * The three visual-debug helpers built by {@link debugAttachVisualHelpers}.
+ * Untyped (`any` members): the real runtime types are THREE.LineSegments/
+ * BoxHelper/AxesHelper, but three ships no types for three/webgpu at all
+ * (see types/three-shims.d.ts) — `THREE.LineSegments` can't be used as a
+ * type annotation when the `THREE` import itself resolves to `any`.
+ */
+export interface DebugVisualHelpers {
+    wireframe: any;
+    box: any;
+    axes: any;
+}
+
 /**
  * debugAttachVisualHelpers(object3d, options)
  *
@@ -168,20 +190,18 @@ export function debugPrintTSLNode(tslNode, options = {}) {
  * it's added to the parent scene instead (found by walking `.parent` up
  * from `object3d` until `.isScene`).
  *
- * @typedef {Object} DebugVisualHelpersOptions
- * @property {number} [wireframeColor=0x00ff00]
- * @property {number} [boxColor=0xffff00]
- * @property {number} [axesSize=1]
- *
- * @param {THREE.Object3D} object3d - target whose geometry/bounds/axes are visualized.
- * @param {DebugVisualHelpersOptions} [options]
- * @returns {?{wireframe: THREE.LineSegments, box: THREE.BoxHelper, axes: THREE.AxesHelper}}
- *   the created helpers (all initially `.visible = false`), or `null` when
- *   DEBUG_ENABLED is false. Pass this into gui-utils.js's
+ * @param object3d - target whose geometry/bounds/axes are visualized.
+ *   Untyped (`any`): three ships no types for three/webgpu (see
+ *   types/three-shims.d.ts).
+ * @returns the created helpers (all initially `.visible = false`), or
+ *   `null` when DEBUG_ENABLED is false. Pass this into gui-utils.js's
  *   `addDebugVisualHelpersToggle()` to wire up on/off checkboxes on the
  *   project's shared lil-gui instance.
  */
-export function debugAttachVisualHelpers(object3d, options = {}) {
+export function debugAttachVisualHelpers(
+    object3d: any,
+    options: DebugVisualHelpersOptions = {},
+): DebugVisualHelpers | null {
     if (!DEBUG_ENABLED) return null;
 
     const { wireframeColor = 0x00ff00, boxColor = 0xffff00, axesSize = 1 } = options;
@@ -214,6 +234,12 @@ export function debugAttachVisualHelpers(object3d, options = {}) {
     return { wireframe, box, axes };
 }
 
+/** Options accepted by {@link debugCreateMaterial}. */
+export interface DebugCreateMaterialOptions {
+    /** which *Node slot the given TSL node is wired into. @default "color" */
+    channel?: "color" | "emissive";
+}
+
 /**
  * debugCreateMaterial(tslPropertyNode, options)
  *
@@ -225,17 +251,16 @@ export function debugAttachVisualHelpers(object3d, options = {}) {
  * `tslPropertyNode` — safe to pass the same instance already wired
  * elsewhere, since TSL nodes aren't generally safe to deep-clone.
  *
- * @typedef {Object} DebugCreateMaterialOptions
- * @property {'color'|'emissive'} [channel='color'] - which *Node slot the
- *   given TSL node is wired into.
- *
- * @param {Object} tslPropertyNode - a TSL node to visualize directly on a
- *   mesh surface (e.g. normalWorld, a uv attribute, or a uniform()).
- * @param {DebugCreateMaterialOptions} [options]
- * @returns {?THREE.MeshBasicNodeMaterial} a ready-to-assign debug material,
- *   or `null` when DEBUG_ENABLED is false.
+ * @param tslPropertyNode - a TSL node to visualize directly on a mesh
+ *   surface (e.g. normalWorld, a uv attribute, or a uniform()). Untyped
+ *   (`any`) — see types/three-shims.d.ts.
+ * @returns a ready-to-assign debug material, or `null` when DEBUG_ENABLED
+ *   is false.
  */
-export function debugCreateMaterial(tslPropertyNode, options = {}) {
+export function debugCreateMaterial(
+    tslPropertyNode: any,
+    options: DebugCreateMaterialOptions = {},
+): any {
     if (!DEBUG_ENABLED) return null;
 
     debugAssert(

@@ -7,16 +7,44 @@ import { pass } from "three/tsl"
 // Every scene script constructs its own instance (`new Engine()`) and gets
 // a fully independent WebGPURenderer/canvas/render loop — only the class
 // definition is shared, never a runtime instance.
+
+/** Options accepted by {@link Engine.init}. */
+export interface EngineOptions {
+    /** passed to WebGPURenderer. @default true */
+    antialias?: boolean;
+    /** @default 75 */
+    fov?: number;
+    /** @default 0.1 */
+    near?: number;
+    /** @default 1000 */
+    far?: number;
+    /** if omitted, the camera stays at three's default (0,0,0). */
+    cameraPosition?: [number, number, number];
+    /** @default 0x000000 */
+    backgroundColor?: number;
+    /**
+     * Seam for a scene with its own post-processing (see
+     * _createRenderPipeline() below). Both parameters and the return value
+     * are TSL nodes, which — like the rest of the three/webgpu & three/tsl
+     * surface — three ships no types for (see types/three-shims.d.ts), so
+     * this stays untyped (`any`) rather than fighting the type system.
+     */
+    buildOutputNode?: (scenePassColor: any, scenePass: any) => any;
+}
+
 export class Engine {
-    constructor() {
-        this.container = null;
-        this.renderer = null;
-        this.camera = null;
-        this.scene = null;
-        this.renderPipeline = null;
-        this._lastWidth = null;
-        this._lastHeight = null;
-    }
+    // Real runtime types are THREE.WebGPURenderer/PerspectiveCamera/Scene/
+    // RenderPipeline, but three ships no .d.ts for three/webgpu at all (see
+    // types/three-shims.d.ts) so these stay `any`, annotated with definite
+    // assignment (`!`) since they're always set inside init() before any
+    // other method runs — no caller ever observes them unset.
+    container!: HTMLElement;
+    renderer!: any;
+    camera!: any;
+    scene!: any;
+    renderPipeline!: any;
+    private _lastWidth!: number;
+    private _lastHeight!: number;
 
     /**
      * init(containerId, options)
@@ -25,21 +53,10 @@ export class Engine {
      *
      *   const engine = await new Engine().init('cube-container', { ... });
      *
-     * @param {string} containerId - id of this scene's container element.
-     * @param {Object} [options]
-     * @param {boolean} [options.antialias=true] - passed to WebGPURenderer.
-     * @param {number} [options.fov=75]
-     * @param {number} [options.near=0.1]
-     * @param {number} [options.far=1000]
-     * @param {[number,number,number]} [options.cameraPosition] - if omitted,
-     *   the camera stays at three's default (0,0,0).
-     * @param {number} [options.backgroundColor=0x000000]
-     * @param {(scenePassColor, scenePass) => *} [options.buildOutputNode] -
-     *   seam for a scene with its own post-processing (see
-     *   _createRenderPipeline() below).
-     * @returns {Promise<Engine>} this, once renderer.init() has resolved.
+     * @param containerId - id of this scene's container element.
+     * @returns this, once renderer.init() has resolved.
      */
-    async init(containerId, options = {}) {
+    async init(containerId: string, options: EngineOptions = {}): Promise<this> {
         const {
             antialias = true,
             fov = 75, near = 0.1, far = 1000, cameraPosition,
@@ -47,7 +64,11 @@ export class Engine {
             buildOutputNode,
         } = options;
 
-        this.container = document.getElementById(containerId);
+        const container = document.getElementById(containerId);
+        if (!container) {
+            throw new Error(`Engine.init: no element found with id "${containerId}"`);
+        }
+        this.container = container;
 
         await this._createRenderer(antialias);
         this._createCamera(fov, near, far, cameraPosition);
@@ -60,7 +81,7 @@ export class Engine {
     // Sized off the container, not the window, so multiple differently-sized
     // scenes coexist on one page. `setSize(w, h, false)` skips forcing the
     // canvas's own CSS size, since the container's CSS already controls that.
-    async _createRenderer(antialias) {
+    private async _createRenderer(antialias: boolean): Promise<void> {
         const width = this.container.clientWidth;
         const height = this.container.clientHeight;
         this.renderer = new THREE.WebGPURenderer({ antialias });
@@ -71,13 +92,16 @@ export class Engine {
         this._lastHeight = height;
     }
 
-    _createCamera(fov, near, far, cameraPosition) {
+    private _createCamera(
+        fov: number, near: number, far: number,
+        cameraPosition?: [number, number, number],
+    ): void {
         const aspect = this.container.clientWidth / this.container.clientHeight;
         this.camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
         if (cameraPosition) this.camera.position.set(...cameraPosition);
     }
 
-    _createScene(backgroundColor) {
+    private _createScene(backgroundColor: number): void {
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(backgroundColor);
     }
@@ -86,7 +110,7 @@ export class Engine {
     // getTextureNode('output') exposes that texture as a node other nodes
     // can chain off of. Plain pass-through unless buildOutputNode is given
     // (background.js's bloom).
-    _createRenderPipeline(buildOutputNode) {
+    private _createRenderPipeline(buildOutputNode?: EngineOptions["buildOutputNode"]): void {
         this.renderPipeline = new THREE.RenderPipeline(this.renderer);
         const scenePass = pass(this.scene, this.camera);
         const scenePassColor = scenePass.getTextureNode('output');
@@ -101,7 +125,7 @@ export class Engine {
     // can fire far more often than a frame renders, flooding that
     // reconfiguration and leaving the canvas black mid-drag. Rate-limiting
     // to once per frame caps it at the GPU's own pace instead.
-    _resizeIfNeeded() {
+    private _resizeIfNeeded(): void {
         const width = this.container.clientWidth;
         const height = this.container.clientHeight;
         if (width === this._lastWidth && height === this._lastHeight) return;
@@ -118,11 +142,9 @@ export class Engine {
      * Drives the render loop. `updateFrame(time)` runs once per frame,
      * before this engine renders — a plain callback free to close over
      * whatever the calling scene needs (meshes, controls, etc.).
-     *
-     * @param {(time: number) => void} updateFrame
      */
-    run(updateFrame) {
-        this.renderer.setAnimationLoop((time) => {
+    run(updateFrame: (time: number) => void): void {
+        this.renderer.setAnimationLoop((time: number) => {
             this._resizeIfNeeded();
             updateFrame(time);
             this.renderPipeline.render(this.scene, this.camera);
@@ -130,7 +152,7 @@ export class Engine {
     }
 
     /** Stops the render loop. */
-    dispose() {
+    dispose(): void {
         this.renderer.setAnimationLoop(null);
     }
 }

@@ -5,7 +5,7 @@ import { createArcballControls, enableArcballOnFirstInteraction } from "../../ut
 import { loadObjAsset } from "../../utils/asset-loader.js"
 
 async function init() {
-    const engine = await new Engine().init('heat-flow-container', { cameraPosition: [0, 0, 2.6] });
+    const engine = await new Engine().init('heat-flow-container', { cameraPosition: [0, 0, 1.6] });
     const { renderer, camera, scene } = engine;
 
     // Lighting — cube.js's fill + key rig, reused as-is: a directional key
@@ -33,16 +33,12 @@ async function init() {
     const controls = createArcballControls(camera, renderer.domElement, scene, {
         minDistance: 1.3,
         maxDistance: 8,
+        enabled: true,
     });
-    enableArcballOnFirstInteraction(renderer.domElement, controls);
 
     // Animation loop
     engine.run(() => {
-        if (controls.enabled) {
-            controls.update();
-        } else {
-            threeMesh.rotation.y += 0.006;
-        }
+        if (controls.enabled) controls.update();
     });
 }
 

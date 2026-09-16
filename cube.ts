@@ -57,6 +57,9 @@ async function init() {
     // Debug/demo GUI lives in its own #cube-gui-container element (see
     // index.html), not overlaid on the canvas.
     const guiContainer = document.getElementById('cube-gui-container');
+    if (!guiContainer) {
+        throw new Error('cube.js: no element found with id "cube-gui-container"');
+    }
     const gui = createGUI(guiContainer);
     addArcballGizmoToggle(gui, controls);
 
@@ -72,7 +75,7 @@ async function init() {
         const debugMaterialState = { previewDebugMaterial: false };
         gui.add(debugMaterialState, "previewDebugMaterial")
             .name("Preview Normal Debug Material")
-            .onChange((on) => { cube.material = on ? debugNormalMaterial : material; });
+            .onChange((on: boolean) => { cube.material = on ? debugNormalMaterial : material; });
     }
 
     // Animation loop

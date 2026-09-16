@@ -16,13 +16,24 @@ import GUI from "lil-gui"
  * ordinary DOM child laid out by the page's own CSS — see index.html's
  * `#cube-gui-container` sitting beside `#cube-container` for the pattern.
  *
- * @param {HTMLElement} container - the DOM element the panel should live in.
- * @param {Object} [options] - any additional lil-gui GUI() constructor options
- *   (e.g. `title`), spread in after `container`.
- * @returns {GUI} the created lil-gui panel instance.
+ * @param container - the DOM element the panel should live in.
+ * @param options - any additional lil-gui GUI() constructor options (e.g.
+ *   `title`), spread in after `container`.
+ * @returns the created lil-gui panel instance.
  */
-export function createGUI(container, options = {}) {
+export function createGUI(container: HTMLElement, options: Record<string, any> = {}): GUI {
     return new GUI({ container, ...options });
+}
+
+/** Backing state for {@link addArcballGizmoToggle}. */
+export interface ArcballGizmoToggleOptions {
+    /** the checkbox's display label. @default "Show Gizmos" */
+    label?: string;
+    /**
+     * initial gizmo visibility, matching ArcballControls' own default (its
+     * gizmo Group is invisible unless told otherwise). @default false
+     */
+    defaultVisible?: boolean;
 }
 
 /**
@@ -33,17 +44,17 @@ export function createGUI(container, options = {}) {
  * tracked in a local `state` object (seeded from `options.defaultVisible`)
  * rather than read back off the controls.
  *
- * @param {GUI} gui - the panel returned by createGUI() to add this control to.
- * @param {import("three/addons/controls/ArcballControls.js").ArcballControls} controls
- * @param {Object} [options]
- * @param {string} [options.label="Show Gizmos"] - the checkbox's display label.
- * @param {boolean} [options.defaultVisible=false] - initial gizmo visibility,
- *   matching ArcballControls' own default (its gizmo Group is invisible unless
- *   told otherwise).
- * @returns {{ showGizmos: boolean }} the backing state object, in case the
- *   caller wants to read or drive it programmatically.
+ * @param gui - the panel returned by createGUI() to add this control to.
+ * @param controls - an ArcballControls instance. Untyped (`any`): three
+ *   ships no types for three/addons (see types/three-shims.d.ts).
+ * @returns the backing state object, in case the caller wants to read or
+ *   drive it programmatically.
  */
-export function addArcballGizmoToggle(gui, controls, options = {}) {
+export function addArcballGizmoToggle(
+    gui: GUI,
+    controls: any,
+    options: ArcballGizmoToggleOptions = {},
+): { showGizmos: boolean } {
     const { label = "Show Gizmos", defaultVisible = false } = options;
 
     const state = { showGizmos: defaultVisible };
@@ -51,9 +62,23 @@ export function addArcballGizmoToggle(gui, controls, options = {}) {
 
     gui.add(state, "showGizmos")
         .name(label)
-        .onChange((value) => controls.setGizmosVisible(value));
+        .onChange((value: boolean) => controls.setGizmosVisible(value));
 
     return state;
+}
+
+/** The three visual-debug helpers built by debug_utils.js's debugAttachVisualHelpers(). */
+export interface DebugVisualHelpers {
+    wireframe: any;
+    box: any;
+    axes: any;
+}
+
+/** Backing state for {@link addDebugVisualHelpersToggle}. */
+export interface DebugVisualHelpersToggleOptions {
+    defaultWireframe?: boolean;
+    defaultBox?: boolean;
+    defaultAxes?: boolean;
 }
 
 /**
@@ -65,17 +90,16 @@ export function addArcballGizmoToggle(gui, controls, options = {}) {
  * helper's `.visible`. Named with the `debug` prefix since it exists purely
  * to support that debug toolkit.
  *
- * @param {GUI} gui - the panel returned by createGUI() to add this control to.
- * @param {{wireframe: THREE.Object3D, box: THREE.Object3D, axes: THREE.Object3D}} helpers
- *   the object returned by debug_utils.js's debugAttachVisualHelpers().
- * @param {Object} [options]
- * @param {boolean} [options.defaultWireframe=false]
- * @param {boolean} [options.defaultBox=false]
- * @param {boolean} [options.defaultAxes=false]
- * @returns {{ wireframe: boolean, box: boolean, axes: boolean }} the backing
- *   state object, in case the caller wants to read or drive it programmatically.
+ * @param gui - the panel returned by createGUI() to add this control to.
+ * @param helpers - the object returned by debug_utils.js's debugAttachVisualHelpers().
+ * @returns the backing state object, in case the caller wants to read or
+ *   drive it programmatically.
  */
-export function addDebugVisualHelpersToggle(gui, helpers, options = {}) {
+export function addDebugVisualHelpersToggle(
+    gui: GUI,
+    helpers: DebugVisualHelpers,
+    options: DebugVisualHelpersToggleOptions = {},
+): { wireframe: boolean; box: boolean; axes: boolean } {
     const {
         defaultWireframe = false,
         defaultBox = false,
@@ -89,11 +113,11 @@ export function addDebugVisualHelpersToggle(gui, helpers, options = {}) {
 
     const folder = gui.addFolder("Visual Debug Helpers");
     folder.add(state, "wireframe").name("Wireframe")
-        .onChange((value) => { helpers.wireframe.visible = value; });
+        .onChange((value: boolean) => { helpers.wireframe.visible = value; });
     folder.add(state, "box").name("Bounding Box")
-        .onChange((value) => { helpers.box.visible = value; });
+        .onChange((value: boolean) => { helpers.box.visible = value; });
     folder.add(state, "axes").name("Axes")
-        .onChange((value) => { helpers.axes.visible = value; });
+        .onChange((value: boolean) => { helpers.axes.visible = value; });
 
     return state;
 }

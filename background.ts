@@ -1,5 +1,4 @@
 import * as THREE from "three/webgpu"
-import { instancedBufferAttribute, uniform, shapeCircle, color, pointUV, positionLocal, uv, time, sin, vec3, vec2, attribute } from "three/tsl"
 import { bloom } from "three/addons/tsl/display/BloomNode.js";
 import { Engine } from "./utils/engine-utils.js"
 
@@ -11,7 +10,7 @@ const RED = 0xB20000;
 const BLACK = 0x000000;
 let THIS_COLOR = PURPLE;
 
-const adjustColorCSS = (num, factor = 1.43) => {
+const adjustColorCSS = (num: number, factor: number = 1.43): string => {
     // Brighten Color
     const r = Math.min(255, Math.round(((num >> 16) & 0xFF) * factor));
     const g = Math.min(255, Math.round(((num >> 8) & 0xFF) * factor));
@@ -19,11 +18,11 @@ const adjustColorCSS = (num, factor = 1.43) => {
     const newHex = (r << 16) | (g << 8) | b;
 
     // Tranform for CSS
-    const toCssHex = (num) => `#${num.toString(16).padStart(6, '0')}`;
+    const toCssHex = (num: number) => `#${num.toString(16).padStart(6, '0')}`;
     return toCssHex(newHex);
 };
 
-function applyThemeColor() {
+function applyThemeColor(): void {
     const body = document.body;
     const themeColor = body.getAttribute("data-theme-color");
 
