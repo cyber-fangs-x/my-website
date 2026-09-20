@@ -27,14 +27,15 @@ body {
   color: gray;
   font-size: 24px;
   font-family: 'Courier New', Courier, monospace;
-  width: 800px;
-  max-width: 100%;
+  width: max(80px, 100% - 2rem);
   margin-top: clamp(150px, 20vh, 20vh);
   margin-bottom: 40vh;
   position: relative;
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   box-sizing: border-box;
+  max-width: 1440px;
 }
 
 .banner{
@@ -48,6 +49,13 @@ body {
   right: -2px;
   z-index: 10;
   white-space: nowrap;
+}
+
+.header{
+  min-width: 0px;
+  position: relative;
+  display: flex;
+  flex-grow: 1;
 }
 
 .container{
@@ -65,18 +73,28 @@ body {
 }
 
 .project-container{
-  background-color: gray;
-  border: 3px solid color-mix(in srgb, var(--primary-color) 80%, transparent);
-  box-shadow: 0 0 8px var(--primary-color), 0 0 20px var(--primary-color);
-  padding: 64px 24px;
+  background-color: rgba(113, 113, 113, 0.8);
+  border-top: 8px solid #dfdfdf;
+  border-left: 8px solid #dfdfdf;
+  border-right: 8px solid #5a5a5a;
+  border-bottom: 8px solid #5a5a5a;
+ 
+  padding: 64px 64px;
   display: flex;
+  justify-content: space-evenly;
+  flex-wrap: wrap;
+  gap: 32px;
+  flex-basis: 100%;
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
 }
 
 .project-ui{
   color: black;
-  flex: 1;
-  padding: 24px;
   text-align: left;
+  flex-basis: 100%;
+  box-sizing: border-box;
 }
 
 .content-window {
@@ -99,12 +117,14 @@ body {
 }
 
 .graphics-container {
-  border-top: 4px solid #5a5a5a;
-  border-left: 4px solid #5a5a5a;
-  border-right: 4px solid #dfdfdf;
-  border-bottom: 4px solid #dfdfdf;
-  height: 300px;
-  width: 300px;
+  border-top: 8px solid #5a5a5a;
+  border-left: 8px solid #5a5a5a;
+  border-right: 8px solid #dfdfdf;
+  border-bottom: 8px solid #dfdfdf;
+  width: 100%;
+  height: 50dvh;
+  align-self: center;
+  box-sizing: border-box;
 }
 
 .project-card {

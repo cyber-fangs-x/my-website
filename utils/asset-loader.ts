@@ -184,6 +184,31 @@ export function loadLinearAlgebraLib(): Promise<{
     return linearAlgebraLibPromise;
 }
 
+let heatMethodLibPromise: Promise<{ HeatMethod: any }> | null = null;
+
+/**
+ * loadHeatMethodLib()
+ *
+ * Idempotent, same pattern as loadGeometryProcessingLib()/loadLinearAlgebraLib() above — injects
+ * projects/geodesic-distance/heat-method.js (defines `class HeatMethod`), after first awaiting
+ * both of its dependency chains: the halfedge Mesh/Geometry classes (HeatMethod's constructor
+ * calls geometry.massMatrix()/laplaceMatrix()) and the WASM-backed linear-algebra classes those
+ * methods reference (SparseMatrix, Triplet) plus the ones HeatMethod.compute() itself uses
+ * (DenseMatrix, Cholesky via SparseMatrix#chol()).
+ *
+ * As with loadLinearAlgebraLib(), the calling script must still create
+ * `(window as any).memoryManager = new EmscriptenMemoryManager()` itself before constructing any
+ * DenseMatrix — that lifecycle stays algorithm-specific, not this loader's job.
+ */
+export function loadHeatMethodLib(): Promise<{ HeatMethod: any }> {
+    if (!heatMethodLibPromise) {
+        heatMethodLibPromise = Promise.all([loadGeometryProcessingLib(), loadLinearAlgebraLib()])
+            .then(() => loadScript(GP_LIB_BASE + 'projects/geodesic-distance/heat-method.js'))
+            .then(() => bridgeGlobals(['HeatMethod'])) as Promise<{ HeatMethod: any }>;
+    }
+    return heatMethodLibPromise;
+}
+
 /**
  * fetchObjText(filepath)
  *
