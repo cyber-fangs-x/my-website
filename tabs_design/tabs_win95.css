@@ -1,0 +1,185 @@
+/* Windows 95 — classic gray 3D chrome: beveled property-sheet tabs on a teal desktop */
+
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --background: #c0c0c0;
+}
+
+body {
+  padding: 2rem;
+  min-height: 100vh;
+  background: #008080;
+  font-size: 1.2rem;
+  font-family: "MS Sans Serif", "Tahoma", sans-serif;
+  color: #000000;
+}
+
+p {
+  margin-bottom: 1rem;
+}
+
+.folder {
+  margin: 1rem auto;
+  max-width: 50rem;
+  width: 100%;
+  -ms-overflow-style: auto;
+  scrollbar-width: auto;
+  scrollbar-color: #c0c0c0 #dfdfdf;
+}
+.folder ::-webkit-scrollbar {
+  height: 16px;
+  background: #dfdfdf; /* Chrome/Safari/Webkit: classic chunky 3D scrollbar instead of a hidden one */
+}
+.folder ::-webkit-scrollbar-track {
+  background: #dfdfdf;
+  border: 1px solid #808080;
+}
+.folder ::-webkit-scrollbar-thumb {
+  background: #c0c0c0;
+  border: 2px outset #c0c0c0;
+}
+
+.tabs {
+  padding: 2rem 0 0 0;
+  margin: 0 0.5rem;
+  width: calc(100% - 1rem);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+@media (min-width: 50rem) {
+  .tabs {
+    margin: 0 2rem;
+    width: calc(100% - 4rem);
+  }
+}
+
+.tab {
+  font-family: inherit;
+  text-transform: none;
+  line-height: 0.8;
+  display: inline-block;
+  margin-left: -35px;
+  margin-right: 4rem;
+  border-top: 2px outset #c0c0c0;
+  border-radius: 0;
+  position: relative;
+  background: var(--background);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.tab:focus {
+  outline: none;
+}
+.tab:focus span {
+  border: 2px dotted #000;
+  border-radius: 0;
+}
+.tab:first-of-type {
+  margin-left: 30px;
+}
+.tab:not(.active) {
+  border-bottom: 2px outset #c0c0c0;
+}
+.tab div {
+  background: var(--background);
+  padding: 6px 0;
+  position: relative;
+  z-index: 10;
+}
+.tab span {
+  display: inline-block;
+  border: 2px solid transparent;
+  padding: 6px 15px 6px;
+  border-radius: 0;
+  z-index: 5;
+  position: relative;
+  font-size: 85%;
+  color: #000;
+  min-width: 6rem;
+}
+.tab:before, .tab:after {
+  content: "";
+  height: 100%;
+  width: 30px;
+  position: absolute;
+  top: -2px;
+  background: var(--background);
+  border-radius: 0;
+  border-top: 2px outset #c0c0c0;
+}
+.tab:before {
+  right: -16px;
+  transform: none;
+  border-right: 2px outset #c0c0c0;
+}
+.tab:after {
+  left: -16px;
+  transform: none;
+  border-left: 2px outset #c0c0c0;
+}
+.tab:not(.active):before, .tab:not(.active):after {
+  border-bottom: 2px outset #c0c0c0;
+}
+.tab.active {
+  z-index: 50;
+  position: relative;
+}
+.tab.active span {
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: 0;
+  color: #000;
+  font-weight: bold;
+}
+.tab.active:focus span {
+  border: 2px dotted #000;
+}
+
+/* per-tab colors: kept uniform Windows gray — real Win95 property sheets never color-code tabs */
+.tab:nth-of-type(1), .content__inner:nth-of-type(1) {
+  --background: #c0c0c0;
+}
+.tab:nth-of-type(2), .content__inner:nth-of-type(2) {
+  --background: #c0c0c0;
+}
+.tab:nth-of-type(3), .content__inner:nth-of-type(3) {
+  --background: #c0c0c0;
+}
+.tab:nth-of-type(4), .content__inner:nth-of-type(4) {
+  --background: #c0c0c0;
+}
+
+.content {
+  position: relative;
+  top: -2px;
+  left: -2px;
+  width: 100%;
+  border-radius: 0;
+}
+.content #tab-1 {
+  display: block;
+}
+.content__inner {
+  display: none;
+  font-family: inherit;
+  background: var(--background);
+  border: 2px outset #c0c0c0;
+  box-shadow: 0 0 0 1px #000;
+  border-radius: inherit;
+  padding: 1rem;
+  z-index: 5;
+}
+
+.page {
+  padding: 1.5rem;
+  border: 2px inset #c0c0c0;
+  border-radius: 0;
+  min-height: 20rem;
+  line-height: 160%;
+  color: #000;
+  background-color: #ffffff;
+  font-family: "Fixedsys", "Courier New", monospace;
+}

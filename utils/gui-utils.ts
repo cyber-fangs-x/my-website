@@ -67,6 +67,46 @@ export function addArcballGizmoToggle(
     return state;
 }
 
+/** Backing state for {@link addPlayPauseToggle}. */
+export interface PlayPauseToggleOptions {
+    /** the checkbox's display label. @default "Running" */
+    label?: string;
+    /** initial running state. @default false */
+    defaultRunning?: boolean;
+}
+
+/**
+ * addPlayPauseToggle(gui, onToggle, options)
+ *
+ * The play/pause control for a continuous background process (e.g. a Web
+ * Worker's autoloop) — a checkbox bound to a boolean `isRunning` state,
+ * same state-object + onChange shape as addArcballGizmoToggle() above,
+ * rather than inventing a new lil-gui idiom. lil-gui has no dedicated
+ * toggle-button widget; a checkbox bound to a boolean state key *is* this
+ * codebase's toggle pattern.
+ *
+ * @param gui - the panel returned by createGUI() to add this control to.
+ * @param onToggle - called with the new running state on every change —
+ *   typically posting a SET_RUNNING message to a worker.
+ * @returns the backing state object, in case the caller wants to read or
+ *   drive it programmatically.
+ */
+export function addPlayPauseToggle(
+    gui: GUI,
+    onToggle: (isRunning: boolean) => void,
+    options: PlayPauseToggleOptions = {},
+): { isRunning: boolean } {
+    const { label = "Running", defaultRunning = false } = options;
+
+    const state = { isRunning: defaultRunning };
+
+    gui.add(state, "isRunning")
+        .name(label)
+        .onChange((value: boolean) => onToggle(value));
+
+    return state;
+}
+
 /** The three visual-debug helpers built by debug_utils.js's debugAttachVisualHelpers(). */
 export interface DebugVisualHelpers {
     wireframe: any;

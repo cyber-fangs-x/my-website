@@ -1,0 +1,202 @@
+/* Blade Runner (1982) — analog CRT terminal + rain-soaked neon signage, warm amber phosphor glow */
+
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --background: #ffb000;
+  --scanline: rgba(0, 0, 0, 0.22);
+}
+
+body {
+  padding: 2rem;
+  min-height: 100vh;
+  background:
+    repeating-linear-gradient(0deg, var(--scanline) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at 50% 20%, #2a1408 0%, #0c0604 70%, #000 100%);
+  font-size: 1.2rem;
+  font-family: "OCR A Std", "Courier New", monospace;
+  color: #ffd899;
+}
+
+p {
+  margin-bottom: 1rem;
+}
+
+.folder {
+  margin: 1rem auto;
+  max-width: 50rem;
+  width: 100%;
+  -ms-overflow-style: none; /* IE 10+ */
+}
+.folder ::-webkit-scrollbar {
+  background: transparent; /* Chrome/Safari/Webkit */
+  display: none;
+}
+
+.tabs {
+  padding: 2rem 0 0 0;
+  margin: 0 0.5rem;
+  width: calc(100% - 1rem);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+@media (min-width: 50rem) {
+  .tabs {
+    margin: 0 2rem;
+    width: calc(100% - 4rem);
+  }
+}
+
+.tab {
+  font-family: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  line-height: 0.8;
+  display: inline-block;
+  margin-left: -35px;
+  margin-right: 4rem;
+  border: 2px solid var(--background);
+  border-width: 2px 0 0;
+  border-radius: 6px 6px 0 0;
+  position: relative;
+  background: #1a0f08;
+  box-shadow: 0 0 8px var(--background);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease;
+}
+.tab:focus {
+  outline: none;
+}
+.tab:focus span {
+  border-bottom: 2px solid var(--background);
+  border-radius: 0;
+}
+.tab:first-of-type {
+  margin-left: 30px;
+}
+.tab:not(.active) {
+  border-bottom: 2px solid var(--background);
+  opacity: 0.75;
+}
+.tab div {
+  background: transparent;
+  padding: 6px 0;
+  position: relative;
+  z-index: 10;
+}
+.tab span {
+  display: inline-block;
+  border: 2px solid transparent;
+  padding: 6px 15px 6px;
+  border-radius: 5px;
+  z-index: 5;
+  position: relative;
+  font-size: 130%;
+  color: var(--background);
+  text-shadow: 0 0 5px var(--background);
+  min-width: 6rem;
+}
+.tab:before, .tab:after {
+  content: "";
+  height: 100%;
+  width: 30px;
+  position: absolute;
+  top: -2px;
+  background: #1a0f08;
+  border-radius: 8px 8px 0 0;
+  border-top: 2px solid var(--background);
+  box-shadow: 0 0 8px var(--background);
+}
+.tab:before {
+  right: -16px;
+  transform: skew(25deg);
+  border-radius: 0 8px 0 0;
+  border-right: 2px solid var(--background);
+}
+.tab:after {
+  left: -16px;
+  transform: skew(-25deg);
+  border-radius: 8px 0 0 0;
+  border-left: 2px solid var(--background);
+}
+.tab:not(.active):before, .tab:not(.active):after {
+  box-shadow: 0 1.5px 0 rgba(0, 0, 0, 0.6);
+}
+.tab.active {
+  z-index: 50;
+  position: relative;
+}
+.tab.active span {
+  background: var(--background);
+  border: 2px solid var(--background);
+  box-shadow: 0 0 14px var(--background);
+  border-radius: 5px;
+  color: #1a0f00;
+  text-shadow: none;
+}
+.tab.active:focus span {
+  outline: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+/* per-tab neon signage colors: Blade Runner's teal/amber palette plus rain-lit pink and red */
+.tab:nth-of-type(1), .content__inner:nth-of-type(1) {
+  --background: #00c2c7;
+}
+.tab:nth-of-type(2), .content__inner:nth-of-type(2) {
+  --background: #ff8a1e;
+}
+.tab:nth-of-type(3), .content__inner:nth-of-type(3) {
+  --background: #ff3fa4;
+}
+.tab:nth-of-type(4), .content__inner:nth-of-type(4) {
+  --background: #e8433a;
+}
+
+.content {
+  position: relative;
+  top: -2px;
+  left: -2px;
+  width: 100%;
+  border-radius: 10px;
+}
+.content #tab-1 {
+  display: block;
+}
+.content__inner {
+  display: none;
+  font-family: inherit;
+  background: #150b06;
+  border-radius: inherit;
+  padding: 1rem;
+  box-shadow: 0 0 0 2px var(--background), 0 0 22px rgba(255, 176, 0, 0.2);
+  z-index: 5;
+  animation: crt-flicker 6s ease-in-out infinite;
+}
+
+.page {
+  padding: 1.5rem;
+  border: 2px solid var(--background);
+  border-radius: 2px;
+  min-height: 20rem;
+  line-height: 160%;
+  color: var(--background);
+  text-shadow: 0 0 3px rgba(255, 176, 0, 0.4);
+  background-color: #0e0704;
+  background-image: repeating-linear-gradient(0deg, var(--scanline) 0 1px, transparent 1px 3px);
+}
+
+@keyframes crt-flicker {
+  0%, 96%, 100% { opacity: 1; }
+  97% { opacity: 0.94; }
+  98% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

@@ -1,15 +1,20 @@
 import * as THREE from "three/webgpu"
-import { attribute, color, float, mix, smoothstep, vec3, uniform, Fn, cos, clamp, abs } from "three/tsl"
+import { attribute, color, float, mix, smoothstep, vec3, uniform, Fn, cos, clamp, abs, exp } from "three/tsl"
 import { Engine } from "../../utils/engine-utils.js"
 import { createArcballControls } from "../../utils/arcball-utils.js"
 import { loadObjAsset, loadLinearAlgebraLib, loadHeatMethodLib } from "../../utils/asset-loader.js"
+import { initializeRadioGroup } from "../../utils/controls-utils.js"
 
 const CYAN = 0x00e5ff;
-const MAGENTA = 0xff00e5;
-const BASE_COLOR = color(0x00e5ff); // Cyan
-const FIRE_COLOR_1 = color(0xff0000); // Red
-const FIRE_COLOR_2 = color(0xffff00); // Yellow
-const FIRE_COLOR_3 = color(MAGENTA); // White
+const LIGHT_BLUE = 0xa0f9ff;
+const AQUA = 0x5efefc;
+const BLUE = 0x23d1f6;
+const SEA_BLUE = 0x009fd7;
+const DARK_BLUE = 0x0564b8;
+const BASE_COLOR = color(CYAN);
+const FIRE_COLOR_1 = color(DARK_BLUE);
+const FIRE_COLOR_2 = color(BLUE);
+const FIRE_COLOR_3 = color(LIGHT_BLUE);
 // Example of a dynamic uniform color you could change later:
 // const FIRE_COLOR_3 = uniform(new THREE.Color(0xffffff)); // White
 const WAVE_DURATION = 5; // seconds for the wavefront to cross the whole mesh
@@ -29,7 +34,7 @@ async function init() {
     key_light.position.set(3, 4, 5);
     scene.add(key_light);
 
-    const fill_light = new THREE.HemisphereLight(0xffffff, 0x222233, 0.6);
+    const fill_light = new THREE.HemisphereLight(0xffffff, 0x222233, 1.0);
     scene.add(fill_light);
 
     // Load the mesh — gpMesh/gpGeometry are the vendored halfedge structures
@@ -52,13 +57,12 @@ async function init() {
     const distances = new Float32Array(vertexCount).fill(1e4);
     const distanceAttribute = new THREE.BufferAttribute(distances, 1);
     threeMesh.geometry.setAttribute('geodesicDist', distanceAttribute);
-    const { waveProgress, waveMaxDistance, waveGlowNode } = createHeatFlowMaterial();
-    //const { waveProgress, modularHeatNode, coolingProgress } = createHeatFlowMaterial2();
+    const { waveProgress, waveMaxDistance, waveGlowNode } = createHeatFlowMaterialRing();
+    const { simulationTime, modularHeatNode } = createHeatFlowMaterialDiffuse();
     const material = new THREE.MeshStandardNodeMaterial();
-    material.colorNode = waveGlowNode();
-    //material.colorNode = modularHeatNode();
+    // colorNode is set by the mode radio group below (its HTML-checked option).
     material.roughnessNode = float(0.6);
-    material.metalnessNode = float(0.0);
+    material.metalnessNode = float(0.8);
     threeMesh.material = material;
     
     scene.add(threeMesh);
@@ -78,12 +82,11 @@ async function init() {
             distances[i] = d;
             if (d > maxDistance) maxDistance = d;
         }
-        // UNCOMMENT THIS LINE TO ENABLE MAX DISTANCE CONTROL
-        // TODO: Fix starting over somewhere else
         waveMaxDistance.value = maxDistance;
         waveProgress.value = 0.0;
-        //coolingProgress.value = 0.0;
+        simulationTime.value = 0.01;
         distanceAttribute.needsUpdate = true;
+        animationStartTime = performance.now();
         
         if (!sendWave) {
             sendWave = true;
@@ -100,23 +103,41 @@ async function init() {
 
         const currentTime = performance.now();
         const elapsed = (currentTime - animationStartTime) / 1000;
-        // const progress = Math.min(elapsed / WAVE_DURATION, 1);
-        // waveProgress.value = progress;
+        const progress = Math.min(elapsed / WAVE_DURATION, 1);
+        waveProgress.value = progress;
 
-        // Goes from 0.0 to 1.0 over WAVE_DURATION
-        const wProgress = Math.min(elapsed / WAVE_DURATION, 1.0);
-        waveProgress.value = wProgress;
-        
-        // --- 2. Update Dissipation (coolingProgress) ---
-        // Subtract the delay so cooling stays at 0.0 until the delay passes
-        const coolingElapsed = Math.max(0, elapsed - COOLING_DELAY);
-        const cProgress = Math.min(coolingElapsed / COOLING_DURATION, 1.0);
-        // TODO: 
-        // coolingProgress.value = cProgress;
-        if (waveProgress >= 1.0) { // TODO:  OR CPROGRESS FOR COOLING
+
+        simulationTime.value = elapsed;
+
+        if (waveProgress.value >= 1.0) { 
             sendWave = false; // Stop the wave after it completes
         }
     }
+
+    // Stops any running wave and pushes every vertex "infinitely" far from a
+    // source, so both color modes fall back to plain BASE_COLOR until the
+    // next tap picks a new source.
+    function stopWave() {
+        sendWave = false;
+        distances.fill(1e4);
+        distanceAttribute.needsUpdate = true;
+    }
+
+    // Mode switcher — the Control Panel's radio group (see index.html). The
+    // HTML-checked option's onSelect runs at init to set the starting
+    // colorNode. needsUpdate forces a shader rebuild: WebGPURenderer compiles
+    // the node graph into a cached pipeline and won't see a swapped colorNode
+    // otherwise.
+    initializeRadioGroup(document.getElementById('heat-mode-radios'), {
+        ring: {
+            onSelect: () => { material.colorNode = waveGlowNode(); material.needsUpdate = true; },
+            onDeselect: () => { stopWave(); waveProgress.value = 0.0; },
+        },
+        diffuse: {
+            onSelect: () => { material.colorNode = modularHeatNode(); material.needsUpdate = true; },
+            onDeselect: () => { stopWave(); simulationTime.value = 0.01; },
+        },
+    });
 
     // pickSourceVertex(event): raycasts the pointer into the mesh and
     // returns whichever corner of the hit triangle is closest to the hit
@@ -185,7 +206,7 @@ async function init() {
 
 
 
-function createHeatFlowMaterial() {
+function createHeatFlowMaterialRing() {
     // 1. Create uniforms to pass our animation progress (0.0 to 1.0) into the GPU
     const waveProgress = uniform(0.0);
     // This will be set to the farthest distance from the source vertex
@@ -223,25 +244,48 @@ function createHeatFlowMaterial() {
     // ---------------------------------------------------------
     
     // Multiply intensity by 3 so channels can activate sequentially
-    const i3 = clippedIntensity.mul(3.0);
+    // const i3 = clippedIntensity.mul(3.0);
     
-    // Zone 1: Blend from Base to Red (when i3 is 0.0 to 1.0)
-        const color_0_to_1 = mix(BASE_COLOR, FIRE_COLOR_1, i3);
+    // // Zone 1: Blend from Base to Red (when i3 is 0.0 to 1.0)
+    //     const color_0_to_1 = mix(BASE_COLOR, FIRE_COLOR_1, i3);
 
-        // Zone 2: Blend from Red to Yellow (when i3 is 1.0 to 2.0)
-        const color_1_to_2 = mix(FIRE_COLOR_1, FIRE_COLOR_2, i3.sub(1.0));
+    //     // Zone 2: Blend from Red to Yellow (when i3 is 1.0 to 2.0)
+    //     const color_1_to_2 = mix(FIRE_COLOR_1, FIRE_COLOR_2, i3.sub(1.0));
 
-        // Zone 3: Blend from Yellow to White (when i3 is 2.0 to 3.0)
-        const color_2_to_3 = mix(FIRE_COLOR_2, FIRE_COLOR_3, i3.sub(2.0));
+    //     // Zone 3: Blend from Yellow to White (when i3 is 2.0 to 3.0)
+    //     const color_2_to_3 = mix(FIRE_COLOR_2, FIRE_COLOR_3, i3.sub(2.0));
 
-        // TSL "if/else" logic to pick the correct zone based on the intensity
-        const finalColor = i3.lessThan(1.0).select(
-            color_0_to_1,                  // IF i3 < 1.0, use the Base->Red mix
-            i3.lessThan(2.0).select(       // ELSE
-                color_1_to_2,              //   IF i3 < 2.0, use Red->Yellow mix
-                color_2_to_3               //   ELSE use Yellow->White mix
-            )
-        );
+    //     // TSL "if/else" logic to pick the correct zone based on the intensity
+    //     const finalColor = i3.lessThan(1.0).select(
+    //         color_0_to_1,                  // IF i3 < 1.0, use the Base->Red mix
+    //         i3.lessThan(2.0).select(       // ELSE
+    //             color_1_to_2,              //   IF i3 < 2.0, use Red->Yellow mix
+    //             color_2_to_3               //   ELSE use Yellow->White mix
+    //         )
+    //     );
+
+    // FIXED BANDING
+        // ---------------------------------------------------------
+        // NEW FIRE COLOR MAPPING IN TSL (Smooth, No Branching)
+        // ---------------------------------------------------------
+
+        // We keep clippedIntensity in its natural 0.0 -> 1.0 range.
+        // Replace the sharp .select() if/else logic with smoothstep overlapping.
+        // This creates an S-curve blend that completely eliminates color banding.
+        // TODO: Fix comments
+        // Zone 1: Base to Red (lower third of the intensity)
+        const factor1 = smoothstep(0.0, 0.33, clippedIntensity);
+        
+        // Zone 2: Red to Yellow (middle third of the intensity)
+        const factor2 = smoothstep(0.33, 0.66, clippedIntensity);
+        
+        // Zone 3: Yellow to White (top third of the intensity)
+        const factor3 = smoothstep(0.66, 1.0, clippedIntensity);
+
+        // Cascade the mixes continuously. The GPU processes this linearly without waiting on branches.
+        const color_0_to_1 = mix(BASE_COLOR, FIRE_COLOR_1, factor1);
+        const color_1_to_2 = mix(color_0_to_1, FIRE_COLOR_2, factor2);
+        const finalColor = mix(color_1_to_2, FIRE_COLOR_3, factor3);
 
         return finalColor;
     });
@@ -249,70 +293,55 @@ function createHeatFlowMaterial() {
     return { waveProgress, waveMaxDistance, waveGlowNode };
 }
 
-function createHeatFlowMaterial2() {
+function createHeatFlowMaterialDiffuse() {
     // --- 1. Structural Uniforms ---
-    const waveProgress = uniform(0.0);
-    const maxCoreRadius = uniform(0.1);    // The area that is 100% solid color
-    const maxFalloffWidth = uniform(0.5); // How far it takes to fade to zero outside the core
-    const coolingProgress = uniform(0.0); // Animate this from 0.0 to 1.0 independently
+    // Instead of separate wave and cooling progress, we use a single physical time parameter.
+    // Animate `simulationTime` starting from a tiny fraction (e.g., 0.01) up to your max duration (e.g., 5.0)
+    const simulationTime = uniform(0.01); 
+    
+    // alpha controls how fast the heat diffuses through the material (distance^2 / time)
+    // silver = 0.000174, copper = 0.000117, aluminum = 0.000097
+    const thermalDiffusivity = uniform(0.05); 
+    // controls the starting brightness/energy of the heat burst
+    const initialEnergy = uniform(0.05); 
 
     const modularHeatNode = Fn(() => {
         const dist = attribute('geodesicDist', 'float');
 
-        // 1. Calculate current sizes based on animation progress
-        const currentCore = waveProgress.mul(maxCoreRadius);
-        // Add a tiny epsilon (0.001) to prevent a divide-by-zero error on frame 1
-        const currentFalloff = waveProgress.mul(maxFalloffWidth).add(0.001); 
+        // --- 2. The Heat Equation (Gaussian Diffusion) ---
+        // Variance (how wide the heat has spread) = 4 * alpha * t
+        const spread = thermalDiffusivity.mul(simulationTime).mul(4.0);
 
-        // 2. The New Falloff Math
-        // smoothstep(min, max, value) returns 0.0 below min, 1.0 above max, and smoothly blends in between.
-        const falloffFactor = smoothstep(
-            currentCore, 
-            currentCore.add(currentFalloff), 
-            dist
-        );
-        
-        // V1 cooling
-        // Invert it so 1.0 is the hot center, and 0.0 is the cold outside
-        //const intensity = uniform(1.0).sub(falloffFactor);
-        // 1. Calculate the spatial heat (1.0 at center, 0.0 at edge)
-        // const spatialIntensity = uniform(1.0).sub(falloffFactor);
+        // Amplitude (how hot the center is) decays as heat spreads out: A = energy / spread
+        const amplitude = initialEnergy.div(spread);
 
-        // // 2. Calculate the cooling over time
-        // // If we just did (1.0 - waveProgress), the heat would fade away before it 
-        // // ever fully expanded. Instead, we use smoothstep to delay the cooling.
-        // // This means: Stay 100% hot from progress 0.0 to 0.5, 
-        // // then gradually fade to 0.0 as progress goes from 0.5 to 1.0.
-        // const coolingFactor = smoothstep(1.0, 0.5, waveProgress);
+        // Gaussian exponent: -(d^2) / spread
+        const distSq = dist.mul(dist);
+        // We use negate() to make it negative distance squared
+        const exponent = distSq.div(spread).negate(); 
 
-        // // 3. Apply the cooling to the final intensity
-        // const intensity = spatialIntensity.mul(coolingFactor);
+        // Calculate exact physical temperature: T = A * e^(-d^2 / spread)
+        const temperature = amplitude.mul(exp(exponent));
 
-        // Inside your TSL node
-        const spatialIntensity = uniform(1.0).sub(falloffFactor);
-        const coolingFactor = uniform(1.0).sub(coolingProgress);
-        const intensity = spatialIntensity.mul(coolingFactor);
-    
-        // --- 3. Modular Color Blending ---
-        
-       // 1. Scale intensity to 0.0 -> 3.0
-        const i3 = intensity.mul(3.0);
-        
-       // Phase 1: Base to Fire 1 (Outer Edge)
-        const factor1 = clamp(i3, 0.0, 1.0);
+        // --- 3. Modular Smooth Color Blending ---
+        // Normalize temperature so we can safely map it to our colors (0.0 to 1.0)
+        //const tNorm = clamp(temperature, 0.0, 1.0);
+        const tNorm = temperature; // No clamping, let the color mapping handle it
+
+        // Replace sharp clamps with smoothsteps. 
+        // smoothstep creates an S-curve, completely eliminating visual color banding.
+        const factor1 = smoothstep(0.0, 0.33, tNorm);
+        const factor2 = smoothstep(0.33, 0.66, tNorm);
+        const factor3 = smoothstep(0.66, 1.0, tNorm);
+
         const colorStep1 = mix(BASE_COLOR, FIRE_COLOR_1, factor1);
-        
-        // Phase 2: Fire 1 to Fire 2 (Mid-range)
-        const factor2 = clamp(i3.sub(1.0), 0.0, 1.0);
         const colorStep2 = mix(colorStep1, FIRE_COLOR_2, factor2);
-        
-        // Phase 3: Fire 2 to Fire 3 (Hottest Core)
-        const factor3 = clamp(i3.sub(2.0), 0.0, 1.0);
-        return mix(colorStep2, FIRE_COLOR_3, factor3);
+        const finalColor = mix(colorStep2, FIRE_COLOR_3, factor3);
+
+        return finalColor;
     });
 
-    return { waveProgress, modularHeatNode, coolingProgress };
-
+    return { simulationTime, modularHeatNode };
 }
 
 

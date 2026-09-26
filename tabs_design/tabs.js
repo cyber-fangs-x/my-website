@@ -14,6 +14,9 @@ function openTab(evt, tab) {
     document.getElementById(tab).style.display = "block";
     evt.currentTarget.className += " active";
 }
+// Expose globally so inline onclick="openTab(...)" handlers still work when this
+// file is loaded as a module (module top-level functions aren't global).
+window.openTab = openTab;
 
 //Horizontal scroll for the tabs on mousewheel. If tabs are longer than the content section, there's a scroll bar but it's hidden to retain the design.
 if (window.innerWidth > 800) {

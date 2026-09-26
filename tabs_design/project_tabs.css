@@ -39,10 +39,10 @@
   --tab-3-color: #e3fc56; /* tab 3 accent (amber) */
   --tab-4-color: #ffffff; /* tab 4 accent (red) */
   --page-accent: white; /* accent for the page text area (cyan) */
-  --panel-bg: #010b12; /* dark fill behind the tabs and the content panel */
-  --page-bg: #00121c; /* dark fill behind the .page text area */
-  --page-text: #d9feff; /* body text color inside .page */
-  --grid-line: rgba(10, 247, 255, 0.07); /* faint grid overlay inside .page */
+  --panel-bg: #090909; /* dark fill behind the tabs and the content panel */
+  --page-bg: #090909; /* dark fill behind the .page text area */
+  --page-text: #dedede; /* body text color inside .page */
+  --grid-line: rgba(255, 255, 255, 0.07); /* faint grid overlay inside .page */
   --widget-font: "Courier New", monospace; /* aspirational: falls back to plain monospace if not loaded, still looks correct */
 
   /* ---- layout: safe to leave as-is ---- */
@@ -129,7 +129,6 @@
   position: relative;
   font-size: 130%;
   color: var(--tab-accent, var(--tab-1-color));
-  text-shadow: 0 0 6px var(--tab-accent, var(--tab-1-color)), 0 0 14px var(--tab-accent, var(--tab-1-color));
   min-width: 6rem; /* keeps a short label like "Cat" from collapsing the tab too narrow */
 }
 .folder-tabs .tab::before,
@@ -163,16 +162,9 @@
   animation: folder-tabs-pulse 2.4s ease-in-out infinite;
 }
 .folder-tabs .tab.active span {
-  background: var(--tab-accent, var(--tab-1-color));
-  border: 2px solid var(--tab-accent, var(--tab-1-color));
-  box-shadow: 0 0 16px var(--tab-accent, var(--tab-1-color));
-  border-radius: 0;
-  color: var(--panel-bg);
-  text-shadow: none;
+  border-bottom: 2px solid var(--tab-accent, var(--tab-1-color));
 }
-.folder-tabs .tab.active:focus span {
-  outline: 1px solid rgba(255, 255, 255, 0.6);
-}
+
 
 /* ---- per-tab colors ----
    Each rule below sets --tab-accent for one tab button AND its matching
@@ -236,15 +228,3 @@
     repeating-linear-gradient(90deg, var(--grid-line) 0 1px, transparent 1px 24px);
 }
 
-@keyframes folder-tabs-pulse {
-  0%, 100% { box-shadow: 0 0 10px var(--tab-accent, var(--tab-1-color)); }
-  50% { box-shadow: 0 0 22px var(--tab-accent, var(--tab-1-color)); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .folder-tabs,
-  .folder-tabs * {
-    animation: none !important;
-    transition: none !important;
-  }
-}

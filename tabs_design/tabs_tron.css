@@ -1,0 +1,201 @@
+/* Tron (1982) — vector-display wireframe: sharp geometry, glowing neon lines on a black grid */
+
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --background: #0af7ff;
+  --grid-line: rgba(10, 247, 255, 0.08);
+}
+
+body {
+  padding: 2rem;
+  min-height: 100vh;
+  background:
+    repeating-linear-gradient(0deg, var(--grid-line) 0 1px, transparent 1px 48px),
+    repeating-linear-gradient(90deg, var(--grid-line) 0 1px, transparent 1px 48px),
+    radial-gradient(ellipse at center, #001824 0%, #000308 75%);
+  font-size: 1.2rem;
+  font-family: "Orbitron", "Consolas", "Courier New", monospace;
+  color: #cffcff;
+}
+
+p {
+  margin-bottom: 1rem;
+}
+
+.folder {
+  margin: 1rem auto;
+  max-width: 50rem;
+  width: 100%;
+  -ms-overflow-style: none; /* IE 10+ */
+}
+.folder ::-webkit-scrollbar {
+  background: transparent; /* Chrome/Safari/Webkit */
+  display: none;
+}
+
+.tabs {
+  padding: 2rem 0 0 0;
+  margin: 0 0.5rem;
+  width: calc(100% - 1rem);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+@media (min-width: 50rem) {
+  .tabs {
+    margin: 0 2rem;
+    width: calc(100% - 4rem);
+  }
+}
+
+.tab {
+  font-family: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  line-height: 0.8;
+  display: inline-block;
+  margin-left: -35px;
+  margin-right: 4rem;
+  border: 2px solid var(--background);
+  border-width: 2px 0 0;
+  border-radius: 0;
+  position: relative;
+  background: #010b12;
+  box-shadow: 0 0 10px var(--background);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease;
+}
+.tab:focus {
+  outline: none;
+}
+.tab:focus span {
+  border-bottom: 2px solid var(--background);
+  border-radius: 0;
+}
+.tab:first-of-type {
+  margin-left: 30px;
+}
+.tab:not(.active) {
+  border-bottom: 2px solid var(--background);
+  opacity: 0.7;
+}
+.tab div {
+  background: transparent;
+  padding: 6px 0;
+  position: relative;
+  z-index: 10;
+}
+.tab span {
+  display: inline-block;
+  border: 2px solid transparent;
+  padding: 6px 15px 6px;
+  border-radius: 0;
+  z-index: 5;
+  position: relative;
+  font-size: 130%;
+  color: var(--background);
+  text-shadow: 0 0 6px var(--background), 0 0 14px var(--background);
+  min-width: 6rem;
+}
+.tab:before, .tab:after {
+  content: "";
+  height: 100%;
+  width: 30px;
+  position: absolute;
+  top: -2px;
+  background: #010b12;
+  border-radius: 0;
+  border-top: 2px solid var(--background);
+  box-shadow: 0 0 10px var(--background);
+}
+.tab:before {
+  right: -16px;
+  transform: skew(25deg);
+  border-right: 2px solid var(--background);
+}
+.tab:after {
+  left: -16px;
+  transform: skew(-25deg);
+  border-left: 2px solid var(--background);
+}
+.tab:not(.active):before, .tab:not(.active):after {
+  box-shadow: 0 1.5px 0 rgba(10, 247, 255, 0.35);
+}
+.tab.active {
+  z-index: 50;
+  position: relative;
+  animation: tron-pulse 2.4s ease-in-out infinite;
+}
+.tab.active span {
+  background: var(--background);
+  border: 2px solid var(--background);
+  box-shadow: 0 0 16px var(--background);
+  border-radius: 0;
+  color: #00131a;
+  text-shadow: none;
+}
+.tab.active:focus span {
+  outline: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+/* per-tab program colors: cyan/blue "user" programs vs. amber/red "ICP" programs */
+.tab:nth-of-type(1), .content__inner:nth-of-type(1) {
+  --background: #0af7ff;
+}
+.tab:nth-of-type(2), .content__inner:nth-of-type(2) {
+  --background: #2f7cff;
+}
+.tab:nth-of-type(3), .content__inner:nth-of-type(3) {
+  --background: #ff8c1a;
+}
+.tab:nth-of-type(4), .content__inner:nth-of-type(4) {
+  --background: #ff2b4d;
+}
+
+.content {
+  position: relative;
+  top: -2px;
+  left: -2px;
+  width: 100%;
+  border-radius: 0;
+}
+.content #tab-1 {
+  display: block;
+}
+.content__inner {
+  display: none;
+  font-family: "Consolas", "Courier New", monospace;
+  background: #010b12;
+  border-radius: inherit;
+  padding: 1rem;
+  box-shadow: 0 0 0 2px var(--background), 0 0 26px rgba(10, 247, 255, 0.25);
+  z-index: 5;
+}
+
+.page {
+  padding: 1.5rem;
+  border: 2px solid rgba(10, 247, 255, 0.4);
+  border-radius: 0;
+  min-height: 20rem;
+  line-height: 160%;
+  color: #d9feff;
+  background-color: #00121c;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(10, 247, 255, 0.07) 0 1px, transparent 1px 24px),
+    repeating-linear-gradient(90deg, rgba(10, 247, 255, 0.07) 0 1px, transparent 1px 24px);
+}
+
+@keyframes tron-pulse {
+  0%, 100% { box-shadow: 0 0 10px var(--background); }
+  50% { box-shadow: 0 0 22px var(--background); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

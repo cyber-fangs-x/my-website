@@ -124,16 +124,6 @@ body {
   margin-bottom: 20px;
 }
 
-.graphics-container {
-  border-top: 8px solid #5a5a5a;
-  border-left: 8px solid #5a5a5a;
-  border-right: 8px solid #dfdfdf;
-  border-bottom: 8px solid #dfdfdf;
-  width: 100%;
-  height: 50dvh;
-  align-self: center;
-  box-sizing: border-box;
-}
 
 .project-card {
   border: 3px solid red;
@@ -167,11 +157,40 @@ body {
   object-fit: contain;
 }
 
-.window {
-  --light-accent: #6d7582;
-  --dark-accent: black;
-  --core-accent: #454a52;
+  /* Overall page/app structure */
+.grid-layout {
+  display: flex;
+  flex-direction: column;
+  position: relative;
 
+  justify-content: space-evenly;
+  flex-wrap: wrap;
+  gap: 32px;
+  flex-basis: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Individual layout rows */
+.layout-row {
+  display: flex;
+  gap: 24px;
+  width: 100%;
+  position: relative;
+  
+  /* Remove hardcoded min-height so it wraps content natively */
+  min-height: auto; 
+  
+  /* Ensure items in the same row match heights if one grows tall */
+  align-items: stretch; 
+}
+
+/* The Draggable Wrapper (Shared Styles) */
+.draggable-container {
+  /* style block */
+  --light-accent: #6d7582;
+  --dark-accent: #1c1e21;
+  --core-accent: #454a52;
 
   min-height: 300px;
   border-top: 5px solid var(--light-accent);
@@ -181,15 +200,25 @@ body {
   outline: 3px solid black;
   outline-offset: 0px; 
   padding: 10px;
-  box-sizing: border-box;
   position: relative;
   display: flex;
   flex-direction: column;
   background-color: var(--core-accent);
+
+  /* layout block */
+  display: inline-flex;
+  border-radius: 2px;
+  user-select: none;
+  box-sizing: border-box;
+  
+  /* Let the box flex vertically along with its internal child */
+  flex-direction: column; 
 }
 
-.window .tool-bar {
-  height: 40px;
+
+.draggable-container .tool-bar {
+  /* style block */
+  height: 30px;
   border-top: inherit;
   border-left: inherit;
   border-right: inherit;
@@ -198,28 +227,95 @@ body {
   outline-offset: inherit;
   flex-shrink: 0;
   background-color: inherit;
+  border-radius: inherit;
   margin-bottom: 5px; /* keeps bottom border visible */
+  
+  /* layout block */
   display: flex;
   align-items: center;          /* Centers the text vertically */
   justify-content: flex-start;  /* Aligns the text to the left */
   padding-left: 20px;           /* Pushes the text 20px from the left border */
+  
+  cursor: grab; /* Shows the grab hand ONLY on the header */
+  box-sizing: border-box;
 }
 
-.window p {
+.draggable-container .tool-bar p {
+  font-size: 16px;
+  font-style: italic;
   margin: 0;                    /* Removes default paragraph spacing */
   text-align: left;             /* Ensures text is justified left */
   color: white;
 }
 
-.window .content__inner {
+/* Unique Starting Widths remain the same */
+.style-70 { width: 70%; }
+.style-30 { width: 30%; }
+.style-100 { width: 100%; }
+
+.graphics-container {
+  /* style block */
+  border-top: 5px solid var(--dark-accent);
+  border-left: 5px solid var(--dark-accent);
+  border-right: 5px solid var(--light-accent);
+  border-bottom: 5px solid var(--light-accent);
+
+
+  width: 100%;
+  height: 50dvh;
+  align-self: center;
+  box-sizing: border-box;
+}
+
+
+/* The Child constraint from your original query */
+.child-outset {
+  /* style block */
   border-top: inherit;
   border-left: inherit;
   border-right: inherit;
   border-bottom: inherit;
   outline: inherit;
   outline-offset: inherit; 
-  flex-grow: 1;
   background-color: inherit;
-  padding: 20px;
+  border-radius: inherit;
+  padding: 3px;
+  
+  /* Keep your minimum safely intact */
+  min-width: 100px;  
+  min-height: 150px; 
+  
+  /* Change height to auto so it expands freely when content overflows */
+  height: auto; 
+  width: 100%;       
+  flex-grow: 1;
+  box-sizing: border-box;
 }
 
+.child-inset {
+  /* style block */
+  border-top: 5px solid var(--dark-accent);
+  border-left: 5px solid var(--dark-accent);
+  border-right: 5px solid var(--light-accent);
+  border-bottom: 5px solid var(--light-accent);
+
+  background-color: inherit;
+  border-radius: inherit;
+  padding: 3px;
+
+  /* Keep your minimum safely intact */
+  min-width: 100px;  
+  min-height: 150px; 
+  
+  /* Change height to auto so it expands freely when content overflows */
+  height: auto; 
+  width: 100%;       
+  flex-grow: 1;
+  box-sizing: border-box;
+}
+
+/* Placeholder dynamically inherits dimensions from JavaScript */
+.drag-placeholder {
+  visibility: hidden;
+  box-sizing: border-box;
+}
