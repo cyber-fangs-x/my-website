@@ -1,9 +1,21 @@
 :root {
-  --primary-color: #FFFFFF;
+  --lighter-accent: #D8DBDF;
+  --light-accent: #6d7582;
+  --tinted-accent: #5F6672;
+  --core-accent: #454a52;
+  --shaded-accent: #353940;
+  --dark-accent: #202327;
+  --darker-accent: #1c1e21;
+  --primary-color: #8D94A0;    /* Gray */
+  --core-color: #454A52;       /* Dark Gray */
+  --secondary-color: #524550;  /* Dark Gray-Purple */
+  --tertiary-color: #524D45;   /* Dark Gray-Brown */
+  --quaternary-color: #455247; /* Dark Gray-Green */
+  --font-color: #D8DBDF;
 }
 @font-face {
     font-family: "HerculesOutline";
-    src: url(fonts/HerculesPixelFontOutline-4nqgK.otf) format('opentype'), url(fonts/HerculesPixelFontRegular-ovAX0.otf) format('opentype');
+    src: url(../fonts/HerculesPixelFontOutline-4nqgK.otf) format('opentype'), url(../fonts/HerculesPixelFontRegular-ovAX0.otf) format('opentype');
     font-weight: normal;
     font-style: normal;
     font-display: swap;
@@ -31,9 +43,10 @@ body {
 }
 
 .main-window {
-  color: gray;
+  color: var(--font-color);
   font-size: 24px;
-  font-family: 'Courier New', Courier, monospace;
+  font-family:'Courier New', Courier, monospace;
+  
   width: max(80px, 100% - 2rem);
   margin-top: clamp(150px, 20vh, 20vh);
   margin-bottom: 40vh;
@@ -106,13 +119,13 @@ body {
 }
 
 .content-window {
-  border: 3px solid yellow;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 48px; /* handles spacing without margin hacks */
+  gap: 96px; /* handles spacing without margin hacks */
 }
 
 .navigation{
+  font-family:'Courier New', Courier, monospace;
   background-image: none;
   background-color: rgba(0, 0, 0, 0.99);
   flex-basis:100%;
@@ -126,9 +139,20 @@ body {
 
 
 .project-card {
-  border: 3px solid red;
-  display: flex; 
+  display: flex;
   flex-direction: column;
+}
+
+/* A card is one big <a>, so the browser's default link colors (blue, purple
+   once visited, red while pressed) would tint its heading. :link, :visited
+   and :active are listed explicitly because the browser styles each of
+   those states separately. */
+.project-card:link,
+.project-card:visited,
+.project-card:hover,
+.project-card:active {
+  color: var(--font-color);
+  text-decoration: none;
 }
 
 .project-card img {
@@ -137,7 +161,7 @@ body {
   border-left: 4px solid #dfdfdf;
   border-right: 4px solid #5a5a5a; 
   border-bottom: 4px solid #5a5a5a; 
-  width: 100%;
+  width: 400px;
   aspect-ratio: 1 / 1; /* keeps screenshots uniform even if source images vary */
   object-fit: cover;
 }
@@ -188,15 +212,11 @@ body {
 /* The Draggable Wrapper (Shared Styles) */
 .draggable-container {
   /* style block */
-  --light-accent: #6d7582;
-  --dark-accent: #1c1e21;
-  --core-accent: #454a52;
-
   min-height: 300px;
   border-top: 5px solid var(--light-accent);
   border-left: 5px solid var(--light-accent);
-  border-right: 5px solid var(--dark-accent);
-  border-bottom: 5px solid var(--dark-accent);
+  border-right: 5px solid var(--darker-accent);
+  border-bottom: 5px solid var(--darker-accent);
   outline: 3px solid black;
   outline-offset: 0px; 
   padding: 10px;
@@ -245,7 +265,7 @@ body {
   font-style: italic;
   margin: 0;                    /* Removes default paragraph spacing */
   text-align: left;             /* Ensures text is justified left */
-  color: white;
+  color: var(--font-color);
 }
 
 /* Unique Starting Widths remain the same */
@@ -255,8 +275,8 @@ body {
 
 .graphics-container {
   /* style block */
-  border-top: 5px solid var(--dark-accent);
-  border-left: 5px solid var(--dark-accent);
+  border-top: 5px solid var(--darker-accent);
+  border-left: 5px solid var(--darker-accent);
   border-right: 5px solid var(--light-accent);
   border-bottom: 5px solid var(--light-accent);
 
@@ -265,6 +285,45 @@ body {
   height: 50dvh;
   align-self: center;
   box-sizing: border-box;
+}
+
+/* Home page (index.html) ------------------------------------------------- */
+
+/* Body copy for the intro blurb. .main-window sets 24px bold for everything,
+   which is too heavy for paragraphs; this caps line length (~70 chars reads
+   comfortably) and lightens the weight so the text scans easily. */
+.intro-text {
+  max-width: 70ch;
+  font-size: 18px;
+  font-weight: normal;
+  line-height: 1.6;
+  text-align: left;
+}
+
+.intro-text p { margin: 0 0 1em; }
+.intro-text p:last-child { margin-bottom: 0; }
+.intro-text .lead { font-size: 22px; font-weight: bold; }
+.intro-text strong { color: var(--primary-color); }
+.intro-text a { color: var(--primary-color); }
+
+/* Square variant of .graphics-container: width is capped, height follows
+   from aspect-ratio instead of the base rule's 50dvh. The canvas is pinned
+   to 100% of the box so a stale (larger) canvas size from before a shrink
+   can't hold the box open and push it out of square — Engine re-reads the
+   container's clientWidth/Height each frame and resizes the canvas to match. */
+.graphics-container.square {
+  width: min(100%, 480px);
+  height: auto;
+  aspect-ratio: 1 / 1;
+  min-height: 0;
+  overflow: hidden;
+  margin-top: 32px;
+}
+
+.graphics-container.square > canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 
@@ -280,6 +339,7 @@ body {
   background-color: inherit;
   border-radius: inherit;
   padding: 3px;
+  margin-bottom: 5px; /* keeps bottom border visible */
   
   /* Keep your minimum safely intact */
   min-width: 100px;  
@@ -290,18 +350,25 @@ body {
   width: 100%;       
   flex-grow: 1;
   box-sizing: border-box;
+
+  /* Column flex so a child can flex-grow to fill the box's height. Deliberately
+     no align-items: the default (stretch) keeps children full-width. This box
+     is a visual skin only — layout belongs to whatever component sits inside. */
+  display: flex;
+  flex-direction: column;
 }
 
 .child-inset {
   /* style block */
-  border-top: 5px solid var(--dark-accent);
-  border-left: 5px solid var(--dark-accent);
+  border-top: 5px solid var(--darker-accent);
+  border-left: 5px solid var(--darker-accent);
   border-right: 5px solid var(--light-accent);
   border-bottom: 5px solid var(--light-accent);
 
   background-color: inherit;
   border-radius: inherit;
   padding: 3px;
+  margin-bottom: 5px; /* keeps bottom border visible */
 
   /* Keep your minimum safely intact */
   min-width: 100px;  

@@ -1,0 +1,175 @@
+/* TODO: Link with tabs.js and create a master "selector" utils */
+:root {
+  --lighter-accent: #D8DBDF;
+  --light-accent: #6d7582;
+  --core-accent: #454a52;
+  --dark-accent: #202327;
+  --darker-accent: #1c1e21;
+  --primary-color: #8D94A0;    /* Gray */
+  --core-color: #454A52;       /* Dark Gray */
+  --secondary-color: #524550;  /* Dark Gray-Purple */
+  --tertiary-color: #524D45;   /* Dark Gray-Brown */
+  --quaternary-color: #455247; /* Dark Gray-Green */
+  --font-color: #D8DBDF;
+}
+/* Push button: see initializeButton() / setButtonToggled() in
+   utils/controls-utils.ts
+   Why: the raised inverse of the radio/checkbox. Those sit sunken (dark
+   top/left, light bottom/right), so a button reads as something to press:
+   tinted face, light top/left, dark bottom/right, and the bevel flips once
+   it's pushed in.
+   How: three routes into the sunken look.
+   - :active — mouse and keyboard, while held.
+   - .is-pressed — the same, set by initializeButton() on pointerdown, since
+     touch screens don't reliably apply :active.
+   - .is-toggled — latched (stays in after release), set by the owning script
+     via setButtonToggled() to show real state, e.g. Run while running. */
+.ui-button {
+  background-color: var(--tinted-accent);
+  color: white;
+  font: inherit; /* <button> ignores the page font otherwise */
+  font-size: 16px;
+  padding: 12px 24px;
+  cursor: pointer;
+  border-top: 5px solid var(--light-accent);
+  border-left: 5px solid var(--light-accent);
+  border-right: 5px solid var(--dark-accent);
+  border-bottom: 5px solid var(--dark-accent);
+  outline: 3px solid black;
+}
+
+.ui-button:active,
+.ui-button.is-pressed,
+.ui-button.is-toggled {
+  border-top-color: var(--dark-accent);
+  border-left-color: var(--dark-accent);
+  border-right-color: var(--light-accent);
+  border-bottom-color: var(--light-accent);
+  color: black;
+}
+
+/* A row of .ui-buttons, e.g. inside a .selector-group column.
+   space-evenly gives the same gap at both edges as between buttons. Wraps
+   onto a second line instead of overflowing when the panel is too narrow. */
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-evenly;
+  gap: var(--selector-gap-min, 0.5rem);
+}
+
+/* Radio group: see initializeRadioGroup() in utils/controls-utils.ts
+   Why: the title and every option should be evenly spaced across whatever
+   box the group is placed in — the same gap above the title, between each
+   pair of items, and below the last option — with one shared left edge.
+   How: flex-grow fills the host box's height, and justify-content:
+   space-evenly splits the spare height into equal gaps, edges included.
+   (Equal-height rows with centered items would NOT do this: that behaves
+   like space-around, giving the gaps between items twice the space of the
+   gaps at the edges.) The floor is row-gap + padding-block at the same
+   value, so when a short box has no spare height the edge gaps and the
+   in-between gaps are still equal instead of packing tight. The indent
+   lives on the group (padding), not on each label, so the title and the
+   radio circles start at the same x. */
+.selector-group {
+  --selector-indent: 1.5rem;  /* shared left edge for the title and the radio circles */
+  --selector-gap-min: 0.5rem; /* smallest gap, reached when the box has no spare height */
+  /* Host-coupled: must equal the padding of the box this group sits in
+     (.child-outset's `padding: 3px` in style.css). That padding already
+     adds space at the top and bottom edges only, so it's subtracted from the
+     group's own edge padding to keep the visible edge gaps equal to the
+     in-between gaps. Set to 0 in a host with no padding. */
+  --selector-host-inset: 3px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  row-gap: var(--selector-gap-min);
+  padding: calc(var(--selector-gap-min) - var(--selector-host-inset)) 0 calc(var(--selector-gap-min) - var(--selector-host-inset)) var(--selector-indent);
+  text-align: left; /* body sets text-align: center, which every descendant inherits otherwise */
+}
+
+.selector-group-title {
+  margin: 0; /* a <p>'s default 1em margins would make the gap under the title bigger than the gap between options */
+  color: black;
+  font-weight: bold;
+}
+
+.selector-group label {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+}
+
+.selector-group input[type="radio"] {
+  appearance: none;
+  box-sizing: border-box;
+  margin: 0;
+  width: 18px;
+  height: 18px;
+  padding: 3px; /* white ring between outline and dot */
+  outline: 2px solid black;
+  border-radius: 50%;
+  border-top: 2px solid var(--dark-accent);
+  border-left: 2px solid var(--dark-accent);
+  border-right: 2px solid var(--light-accent);
+  border-bottom: 2px solid var(--light-accent);
+  cursor: pointer;
+  flex-shrink: 0
+}
+
+/* Black fills only the content box (18 - 2*2 - 2*3 = 8px); the padding ring
+   stays white. The content box inherits a rounded corner from border-radius,
+   so the dot is a circle. */
+.selector-group input[type="radio"]:checked {
+  background: linear-gradient(black, black) content-box, var(--tinted-accent);
+}
+
+/* Checkbox styling*/
+.selector-group input[type="checkbox"] {
+  appearance: none;
+  box-sizing: border-box;
+  margin: 0;
+  width: 18px;
+  height: 18px;
+  padding: 3px; /* white ring between outline and dot */
+  outline: 2px solid black;
+  border-top: 2px solid var(--dark-accent);
+  border-left: 2px solid var(--dark-accent);
+  border-right: 2px solid var(--light-accent);
+  border-bottom: 2px solid var(--light-accent);
+  background: var(--shaded-accent);;
+  cursor: pointer;
+  flex-shrink: 0
+}
+
+/* Black fills only the content box (18 - 2*2 - 2*3 = 8px); the padding ring
+   stays white. The content box inherits a rounded corner from border-radius,
+   so the dot is a circle. */
+.selector-group input[type="checkbox"]:checked {
+  background: linear-gradient(black, black) content-box, var(--tinted-accent);
+}
+
+
+/* lil-gui inside a panel: see createGUI() in utils/gui-utils.ts
+   Why: a lil-gui panel mounted into a .child-outset should fill that box's
+   width like every other control there, and shouldn't repeat a title the
+   surrounding .draggable-container's .tool-bar already shows.
+   How: lil-gui's injected stylesheet pins `.lil-gui.lil-root` to
+   width: var(--width, 245px); width: auto hands sizing back to
+   .child-outset's column flexbox, whose default stretch fills the width.
+   Hiding the root's own title button also drops lil-gui's collapse toggle,
+   which is fine: the panel is always open. These selectors outrank
+   lil-gui's (0,3,0 vs 0,2,0), and lil-gui also injects its <style> before
+   the first stylesheet <link>, so they win either way. Requires lil-gui to
+   be a direct child — pass the .child-outset itself as createGUI()'s
+   container, not a wrapper div inside it. */
+.child-outset > .lil-gui.lil-root {
+  width: auto;
+}
+
+.child-outset > .lil-gui.lil-root > .lil-title {
+  display: none;
+}
+

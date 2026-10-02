@@ -1,11 +1,12 @@
 /* ============================================================================
    PROJECT TABS — modular "folder tab" widget (Tron/vector-display styling)
    ----------------------------------------------------------------------------
-   Drop this file into any static page and pair it with the markup pattern in
-   tabs.html (same folder). Every selector below is scoped under `.folder-tabs`
+   Drop this file into any static page, pair it with tabs.js (same folder),
+   and copy the .folder-tabs markup from projects/heat-method/index.html. Every
+   selector below is scoped under `.folder-tabs`
    so it can't collide with unrelated classes (.tab, .content, .page, .active,
    etc.) that your host page might already use — that's the one structural
-   change from the original tabs_tron.css demo, which assumed it owned the
+   change from the original Tron tabs demo, which assumed it owned the
    whole page. This file intentionally does NOT touch <body> or any other
    page-level element; the widget paints its own dark panels, so it looks the
    same regardless of your page's background color.
@@ -34,25 +35,31 @@
 
 .folder-tabs {
   /* ---- theme variables: edit these to reskin the whole widget ---- */
-  --tab-1-color: #0af7ff; /* tab 1 accent (cyan) */
-  --tab-2-color: #a953ff; /* tab 2 accent (blue) */
-  --tab-3-color: #e3fc56; /* tab 3 accent (amber) */
-  --tab-4-color: #ffffff; /* tab 4 accent (red) */
-  --page-accent: white; /* accent for the page text area (cyan) */
+  --selected-tab-color: #8D94A0; /* active tab + the visible content panel's border */
+  --unselected-tab-color: #353940; /* every other tab */
+  /* TODO: selected tab font, unselected tab font, match with content */
+  --page-accent: #D8DBDF; /* accent for the page text area (cyan) */
   --panel-bg: #090909; /* dark fill behind the tabs and the content panel */
   --page-bg: #090909; /* dark fill behind the .page text area */
-  --page-text: #dedede; /* body text color inside .page */
+  --page-text: #D8DBDF; /* body text color inside .page */
   --grid-line: rgba(255, 255, 255, 0.07); /* faint grid overlay inside .page */
   --widget-font: "Courier New", monospace; /* aspirational: falls back to plain monospace if not loaded, still looks correct */
   --folder-tabs-radius: 6px; /* corner radius for the tabs' top corners and the colored content panel */
   /* Host-coupled: must equal the padding of the element this widget sits in
-     (.child-content's `padding: 3px` in style_v2.css). The negative margin
+     (.child-outset's `padding: 3px` in style.css). The negative margin
      below uses it to reach past that padding so the panel's colored border
      sits flush against the host's own border. Set to 0 in a host with no padding. */
   --folder-tabs-host-inset: 3px;
 
   /* ---- layout: safe to leave as-is ---- */
   width: auto; /* not 100% — a fixed width ignores the negative right margin below, auto lets the block stretch into it */
+  /* width: auto only stretches when the host lets it. A host that is a column
+     flexbox with align-items: flex-start/center (.child-outset in style.css)
+     makes auto mean "shrink to fit the content" instead, so a tab with only
+     a line of text left the panel far narrower than the host. align-self
+     overrides the host's align-items for this one element and keeps the
+     widget full-width in any host. */
+  align-self: stretch;
   margin: 0 calc(-1 * var(--folder-tabs-host-inset)) calc(-1 * var(--folder-tabs-host-inset)); /* left/right/bottom only — top stays put so the tab strip keeps its spacing under whatever sits above it */
   padding: 0px;
   text-align: left; /* so a host page's inherited text-align (e.g. body { text-align: center }) can't center the inline-block tabs or the .page text */
@@ -109,12 +116,12 @@
   display: inline-block;
   margin-left: 15px; /* creates the overlap with the previous tab — see note above */
   padding: 0; /* real padding lives on .tab div / .tab span below; declared here only to block a host ".tab" rule from adding its own */
-  border: 2px solid var(--tab-accent, var(--tab-1-color));
+  border: 2px solid var(--tab-accent);
   border-width: 2px 0 0;
   border-radius: var(--folder-tabs-radius) var(--folder-tabs-radius) 0 0; /* top corners only; the ::before/::after wings below round their matching corners too, since they paint over this one */
   position: relative;
   background: var(--panel-bg);
-  /* box-shadow: 0 0 10px var(--tab-accent, var(--tab-1-color));  glow blur radius (10px here, 16px/22px elsewhere below) is a plain literal — bump it up for a stronger bloom */
+  /* box-shadow: 0 0 10px var(--tab-accent);  glow blur radius (10px here, 16px/22px elsewhere below) is a plain literal — bump it up for a stronger bloom */
   outline: none; /* so a host page's own bare "button" rule can't leak its outline in — see the collision note at the top of this file. Outline always traces the plain rectangular border-box, never the skewed trapezoid the ::before/::after wings draw, so a leaked outline shows up as a straight-edged rectangle cutting across the diagonal shape */
   white-space: nowrap;
   cursor: pointer;
@@ -127,7 +134,7 @@
   margin-left: 30px; /* no previous tab to overlap, so this is just the strip's left inset */
 }
 .folder-tabs .tab:not(.active) {
-  border-bottom: 2px solid var(--tab-accent, var(--tab-1-color));
+  border-bottom: 2px solid var(--tab-accent);
 }
 .folder-tabs .tab div {
   background: transparent;
@@ -143,7 +150,7 @@
   z-index: 5;
   position: relative;
   font-size: 130%;
-  color: var(--tab-accent, var(--tab-1-color));
+  color: var(--tab-accent);
   min-width: 6rem; /* keeps a short label like "Cat" from collapsing the tab too narrow */
   
 }
@@ -154,7 +161,7 @@
   position: absolute;
   top: -2px;
   background: var(--panel-bg);
-  border-top: 2px solid var(--tab-accent, var(--tab-1-color));
+  border-top: 2px solid var(--tab-accent);
 }
 .folder-tabs .tab::before {
   /* right offset = tan(42deg) * (measured tab height ~50px) / 2 ≈ 22px —
@@ -173,7 +180,7 @@
   right: -22px;
   width: 55px;
   transform: skew(42deg); /* steep angled cut — v1 used a symmetric skew(25deg)/skew(-25deg) pair, this is v2's steeper right edge */
-  border-right: 2px solid var(--tab-accent, var(--tab-1-color));
+  border-right: 2px solid var(--tab-accent);
   border-top-right-radius: var(--folder-tabs-radius); /* skew() shears the rounded corner along with the rest of the box */
 }
 .folder-tabs .tab::after {
@@ -181,7 +188,7 @@
   width: max(2px, var(--folder-tabs-radius)); /* no skew, so this is just the vertical left edge itself rather than a wide flare box — widened to at least the radius so the rounded corner has room to curve (its --panel-bg fill matches the tab, so the extra width is invisible) */
   border-top-left-radius: var(--folder-tabs-radius);
   transform: skew(0deg); /* vertical left edge — v1 mirrored ::before with skew(-25deg) */
-  border-left: 2px solid var(--tab-accent, var(--tab-1-color));
+  border-left: 2px solid var(--tab-accent);
 }
 .folder-tabs .tab:not(.active)::before,
 .folder-tabs .tab:not(.active)::after {
@@ -190,9 +197,9 @@
 /* ---- overlap stacking order ----
    Without an explicit z-index, later siblings paint on top by default,
    which would make each tab bury the one to its LEFT. These reverse that so
-   left tabs sit on top of right tabs instead (hardcoded per tab, same as
-   the per-tab color block below — add a :nth-of-type(5) entry with a lower
-   number than tab 4's if a 5th tab is added). .tab.active's z-index: 50
+   left tabs sit on top of right tabs instead (hardcoded per tab — add a
+   :nth-of-type(5) entry with a lower number than tab 4's if a 5th tab is
+   added). .tab.active's z-index: 50
    still beats all of these, so the active tab always rises above its
    neighbors regardless of position. */
 .folder-tabs .tab:nth-of-type(1) { z-index: 4; }
@@ -219,30 +226,23 @@
   bottom: -6px; /* span's own bottom padding (6px) is exactly the gap up to the tab's bottom edge / content panel border — measured against the rendered layout, not guessed */
   width: 50%;
   height: 2px;
-  background: var(--tab-accent, var(--tab-1-color));
+  background: var(--tab-accent);
 }
 
 
-/* ---- per-tab colors ----
-   Each rule below sets --tab-accent for one tab button AND its matching
-   content panel (they're siblings elsewhere in the DOM, so each needs its
-   own copy of the variable). To add a 5th tab, add a :nth-of-type(5) block
-   here — anything left undefined falls back to --tab-1-color, set above. */
-.folder-tabs .tab:nth-of-type(1),
-.folder-tabs .content__inner:nth-of-type(1) {
-  --tab-accent: var(--tab-1-color);
+/* ---- tab colors by state ----
+   Every border/label/underline rule above reads --tab-accent; these set it
+   by selection state rather than by position, so any number of tabs works
+   with no per-tab entries. The swap follows tabs.js's openTab(), which moves
+   the "active" class between buttons. .content__inner always takes the
+   selected color: only the active tab's panel is ever displayed, and it
+   should read as one connected shape with that tab. */
+.folder-tabs .tab {
+  --tab-accent: var(--unselected-tab-color);
 }
-.folder-tabs .tab:nth-of-type(2),
-.folder-tabs .content__inner:nth-of-type(2) {
-  --tab-accent: var(--tab-2-color);
-}
-.folder-tabs .tab:nth-of-type(3),
-.folder-tabs .content__inner:nth-of-type(3) {
-  --tab-accent: var(--tab-3-color);
-}
-.folder-tabs .tab:nth-of-type(4),
-.folder-tabs .content__inner:nth-of-type(4) {
-  --tab-accent: var(--tab-4-color);
+.folder-tabs .tab.active,
+.folder-tabs .content__inner {
+  --tab-accent: var(--selected-tab-color);
 }
 
 /* ---- content panel ---- */
@@ -271,13 +271,13 @@
   background: var(--panel-bg);
   border-radius: var(--folder-tabs-radius);
   padding: 1rem;
-  border: 2px solid var(--tab-accent, var(--tab-1-color)); /* a real border, not a box-shadow spread: a shadow paints outside the box without taking layout space, so it couldn't line up flush with the host's edges */
+  border: 2px solid var(--tab-accent); /* a real border, not a box-shadow spread: a shadow paints outside the box without taking layout space, so it couldn't line up flush with the host's edges */
   z-index: 5;
 }
 
 .folder-tabs .page {
   font-family: inherit; /* so a host page's own bare ".page" rule can't leak a different font in */
-  padding: 1.5rem;
+  padding: 3rem;
   border: 2px solid var(--page-accent);
   border-radius: max(0px, calc(var(--folder-tabs-radius) - 2px - 1rem)); /* concentric with the panel: outer radius minus the gap between the two curves (.content__inner's 2px border + 1rem padding) — square until the radius exceeds ~18px */
   min-height: 20rem;

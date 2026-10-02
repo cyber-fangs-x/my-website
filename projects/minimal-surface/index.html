@@ -9,35 +9,133 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Lekton:ital,wght@0,400;0,700;1,400&family=Silkscreen:wght@400;700&family=Workbench&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="../../style.css">
+    <link rel="stylesheet" href="../../ui_design/style.css">
+    <link rel="stylesheet" href="../../ui_design/tabs.css">
+    <link rel="stylesheet" href="../../ui_design/ui.css">
+    <script type="module" src="../../ui_design/tabs.js"></script>
     <script type="module" src="../../background.ts" defer></script>
+    <script type="module" src="../../ui_design/katex.js"></script>
     <script type="module" src="minimal-surface.ts" defer></script>
 
 </head>
-  <body data-theme-color="white">
+  <body data-theme-color="gray">
     <!-- Background Scene -->
     <div id="background-container"></div>
 
     <!-- Main Content Window -->
     <div class="main-window">
-      <!-- Name Banner -->
-      <div class="banner">cyber-fang</div>
 
-      <!-- Navigation Bar -->
-      <nav class="navigation container">
-        <a href="../../index.html" style="color: gray; text-decoration: none;">home</a>
-        <a href="../../about.html" style="color: gray; text-decoration: none;">about me</a>
-        <a href="../../projects.html" style="color: gray; text-decoration: none;">projects</a>
-        <a href="../../contact.html" style="color: gray; text-decoration: none;">contact</a>
-      </nav>
+      <div class="header">
+        <!-- Name Banner -->
+        <div class="banner">cyber-fang</div>
+
+        <!-- Navigation Bar -->
+        <nav class="navigation container">
+          <a href="../../index.html" style="color: gray; text-decoration: none;">home</a>
+          <a href="../../about.html" style="color: gray; text-decoration: none;">about me</a>
+          <a href="../../projects.html" style="color: gray; text-decoration: none;">projects</a>
+          <a href="../../contact.html" style="color: gray; text-decoration: none;">contact</a>
+        </nav>
+      </div>
 
       <!-- Content Area -->
-      <div class="project-container" style="font-family: monospace; height: 800px;">
-        <div class="graphics-container" id="minimal-surface-container"></div>
-        <div class="project-ui">
-          <div id="minimal-surface-gui-container"></div>
-          <h2>Minimal Surface Flow</h2>
-          <p>Modified mean curvature flow, computed continuously in a Web Worker off the main thread. Press "Run Flow" to start.</p>
+      <div class="grid-layout">
+        <!-- Row 1 Container (Holds the 70% and 30% items) -->
+        <div class="layout-row">
+          <div class="draggable-container style-70">
+            <!-- minimal-surface.ts rewrites this label whenever the Object radio
+                 swaps the mesh; the starting text matches the checked radio. -->
+            <div class="tool-bar"><p id="minimal-surface-scene-label">Scene: tube</p></div>
+            <div class="graphics-container" id="minimal-surface-container"></div>
+          </div>
+          <div class="draggable-container style-30">
+            <div class="tool-bar"><p>Control Panel</p></div>
+            <!-- Each box's flex-grow = its number of gaps (title + items + 1:
+                 one gap above each item, plus one below the last), so spare
+                 height is split in proportion and both groups end up with
+                 similar gap sizes — same convention as heat-method's radios. Bump
+                 it when adding an item. -->
+            <!-- Run/Stop/Reset — wired by initializeButton() in
+                 minimal-surface.ts, which also keeps Run/Stop latched to the
+                 real running state. .selector-group is reused only for its
+                 column layout, so the "Flow" title lines up with "Object". -->
+            <div class="child-outset" style="flex-grow: 3">
+              <div class="selector-group" id="flow-controls" role="group" aria-labelledby="flow-controls-title">
+                <p class="selector-group-title" id="flow-controls-title">Flow</p>
+                <div class="button-row">
+                  <button class="ui-button" id="flow-run-button">Run</button>
+                  <button class="ui-button" id="flow-stop-button">Stop</button>
+                  <button class="ui-button" id="flow-reset-button">Reset</button>
+                </div>
+              </div>
+            </div>
+            <div class="child-outset" style="flex-grow: 4">
+              <div class="selector-group" id="flow-object-radios" role="radiogroup" aria-labelledby="flow-object-title">
+                <p class="selector-group-title" id="flow-object-title">Object</p>
+                <label><input type="radio" name="flow-object" value="tube" checked> Tube (pinned ends)</label>
+                <label><input type="radio" name="flow-object" value="bumpySphere"> Bumpy sphere</label>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Row 2 Container (Holds the 100% item) -->
+        <div class="layout-row">
+          <div class="draggable-container style-100">
+            <div class="tool-bar"><p>Documentation</p></div>
+            <div class="child-outset">
+              <div class="folder-tabs">
+
+                <!-- Tab strip: one <button> per tab. Each button's onclick argument
+                    must match the id of its content panel below (e.g. 'tab-2' here
+                    pairs with id="tab-2" on the corresponding .content__inner). The
+                    first button carries class="active" so its panel shows by default
+                    before any click happens. -->
+                <div class="tabs">
+                  <button class="tab active" onclick="openTab(event, 'tab-1')">
+                    <div><span>overview</span></div>
+                  </button>
+                  <button class="tab" onclick="openTab(event, 'tab-2')">
+                    <div><span>algorithm</span></div>
+                  </button>
+                  <button class="tab" onclick="openTab(event, 'tab-3')">
+                    <div><span>controls</span></div>
+                  </button>
+                  <button class="tab" onclick="openTab(event, 'tab-4')">
+                    <div><span>resources</span></div>
+                  </button>
+                </div>
+
+                <!-- Content panels: one .content__inner per tab, in the same order as
+                    the buttons above. The "tab-N" ids just need to be unique on the
+                    page — if you embed more than one .folder-tabs widget in the same
+                    page, rename every id/onclick pair (e.g. "widget2-tab-1") so they
+                    don't clash with the first widget's ids. -->
+                <div class="content">
+                  <div class="content__inner" id="tab-1">
+                    <div class="page">
+                      <p>WIP</p>
+                    </div>
+                  </div>
+                  <div class="content__inner" id="tab-2">
+                    <div class="page">
+                      <p>WIP</p>
+                    </div>
+                  </div>
+                  <div class="content__inner" id="tab-3">
+                    <div class="page">
+                      <p>WIP</p>
+                    </div>
+                  </div>
+                  <div class="content__inner" id="tab-4">
+                    <div class="page">
+                      <p>WIP</p>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

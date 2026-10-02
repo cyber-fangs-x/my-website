@@ -1,4 +1,6 @@
 import * as THREE from "three/webgpu"
+import { STLLoader } from "three/addons/loaders/STLLoader.js"
+import { mergeVertices } from "three/addons/utils/BufferGeometryUtils.js"
 
 // asset-loader.js — turns an .obj file into the two structures a discrete-
 // differential-geometry graphics script needs, kept index-aligned with each
@@ -407,4 +409,64 @@ export async function loadObjAsset(filepath: string, options: LoadObjAssetOption
     const threeMesh = buildThreeMesh(gpMesh, gpGeometry);
 
     return { threeMesh, gpMesh, gpGeometry, polygonSoup };
+}
+
+/**
+ * loadStlMesh(filepath)
+ *
+ * Why: an .stl file is a raw triangle soup. Each triangle stores its own
+ * three corner positions, so a vertex shared by six triangles appears six
+ * times, and no triangle knows its neighbours. Anything built on halfedge
+ * connectivity (the flow worker's Mesh.build(), a cotan Laplacian) would see
+ * every triangle as its own disconnected island. This welds the soup back
+ * into an indexed mesh, so it can be used just like loadObjAsset()'s
+ * threeMesh. Only the THREE.Mesh is built; unlike loadObjAsset(), there is
+ * no gpMesh/gpGeometry. A script that needs those builds them from the
+ * flattened arrays, as minimal-surface's flow worker does.
+ *
+ * How:
+ *   1. three's STLLoader parses the file (binary or ASCII).
+ *   2. Its per-triangle normals are deleted, so mergeVertices() compares
+ *      positions only and duplicates collapse into one indexed vertex. The
+ *      soup is first scaled to a unit bounding sphere, so mergeVertices()'s
+ *      fixed 1e-4 tolerance is relative to the model's size, whatever units
+ *      it was exported in.
+ *   3. Positions are normalized the same way Geometry's normalize() does it
+ *      for loadObjAsset(): the vertex centroid moves to the origin and the
+ *      farthest vertex lands at radius 1. That way an .stl and an .obj come
+ *      out at the same scale and are interchangeable in a scene.
+ *   4. Normals are computed by three's computeVertexNormals(), as in
+ *      buildThreeMesh().
+ *
+ * @param filepath - path under the site root, e.g. 'assets/bumpysphere.stl'.
+ * @returns a THREE.Mesh with an indexed geometry and no material.
+ */
+export async function loadStlMesh(filepath: string): Promise<any> {
+    const url = import.meta.env.BASE_URL + filepath;
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error(`asset-loader: failed to fetch "${url}" (${response.status} ${response.statusText})`);
+    }
+    const soup = new STLLoader().parse(await response.arrayBuffer());
+
+    soup.deleteAttribute('normal');
+    soup.computeBoundingSphere();
+    const { center, radius } = soup.boundingSphere;
+    soup.translate(-center.x, -center.y, -center.z);
+    soup.scale(1 / radius, 1 / radius, 1 / radius);
+    const geometry = mergeVertices(soup);
+    soup.dispose();
+
+    const position = geometry.attributes.position;
+    const centroid = new THREE.Vector3();
+    const p = new THREE.Vector3();
+    for (let i = 0; i < position.count; i++) centroid.add(p.fromBufferAttribute(position, i));
+    centroid.divideScalar(position.count);
+    geometry.translate(-centroid.x, -centroid.y, -centroid.z);
+    let maxRadius = 0;
+    for (let i = 0; i < position.count; i++) maxRadius = Math.max(maxRadius, p.fromBufferAttribute(position, i).length());
+    geometry.scale(1 / maxRadius, 1 / maxRadius, 1 / maxRadius);
+
+    geometry.computeVertexNormals();
+    return new THREE.Mesh(geometry);
 }

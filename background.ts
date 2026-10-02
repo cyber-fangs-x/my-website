@@ -3,8 +3,9 @@ import { bloom } from "three/addons/tsl/display/BloomNode.js";
 import { Engine } from "./utils/engine-utils.js"
 
 const PURPLE = 0x7900B2; //0xAE00FF;
-const BLUE = 0x00B2FF; //0x00D4FF;
-const GREEN = 0x00B200; //0x00FFB2;
+const BLUE = 0x00B2FF; 
+const GREEN = 0x00B200; 
+const GRAY = 0x8D94A0;
 const WHITE = 0xFFFFFF;
 const RED = 0xB20000;
 const BLACK = 0x000000;
@@ -43,8 +44,11 @@ function applyThemeColor(): void {
             THIS_COLOR = RED;
             document.documentElement.style.setProperty('--primary-color', adjustColorCSS(RED));
             break;
+        case "gray":
+            THIS_COLOR = GRAY;
+            document.documentElement.style.setProperty('--primary-color', adjustColorCSS(GRAY));
         default:
-            THIS_COLOR = WHITE; // Default to purple if no valid theme color is found
+            THIS_COLOR = GRAY; // Default to purple if no valid theme color is found
     }
 }
 

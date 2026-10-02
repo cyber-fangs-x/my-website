@@ -6,11 +6,7 @@ import {
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js"
 import { Engine } from "./utils/engine-utils.js"
 import { createArcballControls, enableArcballOnFirstInteraction } from "./utils/arcball-utils.js"
-import { createGUI, addArcballGizmoToggle, addDebugVisualHelpersToggle } from "./utils/gui-utils.js"
-import {
-    debugAssert, debugPrintSceneGraph, debugPrintTSLNode,
-    debugAttachVisualHelpers, debugCreateMaterial
-} from "./utils/debug_utils.js"
+import { debugAssert, debugPrintSceneGraph, debugPrintTSLNode } from "./utils/debug_utils.js"
 
 // Flip these to change which Node Material the cube uses. GLASS_MODE wins if
 // both are true; both false falls back to a plain grey material.
@@ -54,29 +50,9 @@ async function init() {
     });
     enableArcballOnFirstInteraction(renderer.domElement, controls);
 
-    // Debug/demo GUI lives in its own #cube-gui-container element (see
-    // index.html), not overlaid on the canvas.
-    const guiContainer = document.getElementById('cube-gui-container');
-    if (!guiContainer) {
-        throw new Error('cube.js: no element found with id "cube-gui-container"');
-    }
-    const gui = createGUI(guiContainer);
-    addArcballGizmoToggle(gui, controls);
-
     // DEBUG (see utils/debug_utils.js — DEBUG_ENABLED flag lives there)
     debugAssert(cube.geometry.attributes.position, "cube must have a position attribute");
     debugPrintSceneGraph(scene);
-
-    const helpers = debugAttachVisualHelpers(cube, { axesSize: 1.2 });
-    if (helpers) addDebugVisualHelpersToggle(gui, helpers);
-
-    const debugNormalMaterial = debugCreateMaterial(normalWorld);
-    if (debugNormalMaterial) {
-        const debugMaterialState = { previewDebugMaterial: false };
-        gui.add(debugMaterialState, "previewDebugMaterial")
-            .name("Preview Normal Debug Material")
-            .onChange((on: boolean) => { cube.material = on ? debugNormalMaterial : material; });
-    }
 
     // Animation loop
     engine.run(() => {

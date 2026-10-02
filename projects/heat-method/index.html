@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fang - Graphics Developer</title>
+    <link rel="icon" type="image/x-icon" href="../../imgs/rei.png">
+
+    <!-- Google fonts!! -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lekton:ital,wght@0,400;0,700;1,400&family=Silkscreen:wght@400;700&family=Workbench&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../../ui_design/style.css">
+    <link rel="stylesheet" href="../../ui_design/tabs.css">
+    <link rel="stylesheet" href="../../ui_design/ui.css">
+    <script type="module" src="../../ui_design/tabs.js"></script>
+    <script type="module" src="../../background.ts" defer></script>
+    <script type="module" src="../../ui_design/katex.js"></script>
+    <script type="module" src="heat-method.ts" defer></script>
+
+</head>
+  <body data-theme-color="gray">
+    <!-- Background Scene -->
+    <div id="background-container"></div>
+
+    <!-- Main Content Window -->
+    <div class="main-window">
+
+      <div class="header">
+        <!-- Name Banner -->
+        <div class="banner">cyber-fang</div>
+
+        <!-- Navigation Bar -->
+        <nav class="navigation container">
+          <a href="../../index.html" style="color: gray; text-decoration: none;">home</a>
+          <a href="../../about.html" style="color: gray; text-decoration: none;">about me</a>
+          <a href="../../projects.html" style="color: gray; text-decoration: none;">projects</a>
+          <a href="../../contact.html" style="color: gray; text-decoration: none;">contact</a>
+        </nav>
+      </div>
+
+      <!-- Content Area -->
+      <div class="grid-layout">
+        <!-- Row 1 Container (Holds the 70% and 30% items) -->
+        <div class="layout-row">
+          <div class="draggable-container style-70">
+            <div class="tool-bar"><p>Scene: "assets/cat.obj"</p></div>
+            <div class="graphics-container" id="heat-method-container"></div>
+          
+          </div>
+          <div class="draggable-container style-30">
+            <div class="tool-bar"><p>Control Panel</p></div>
+            <!-- Each box's flex-grow = its number of gaps (title + options + 1:
+                 one gap above each item, plus one below the last), so spare
+                 height is split in proportion and both radio groups end up with
+                 the same gap size. Bump it when adding an option. -->
+            <div class="child-outset" style="flex-grow: 5">
+              <div class="selector-group" id="heat-mode-radios" role="radiogroup" aria-labelledby="heat-mode-title">
+                <p class="selector-group-title" id="heat-mode-title">Modes</p>
+                <label><input type="radio" name="heat-mode" value="ring" checked> Ring wave</label>
+                <label><input type="radio" name="heat-mode" value="diffuse"> Diffusion</label>
+                <label><input type="radio" name="heat-mode" value="isolines"> Isolines</label>
+              </div>
+            </div>
+            <div class="child-outset" style="flex-grow: 4">
+              <div class="selector-group" id="colormap-radios" role="radiogroup" aria-labelledby="colormap-title">
+                <p class="selector-group-title" id="colormap-title">Colors</p>
+                <label><input type="radio" name="colormap" value="heatedMetal" checked> Heated metal</label>
+                <label><input type="radio" name="colormap" value="viridis"> Viridis</label>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Row 2 Container (Holds the 100% item) -->
+        <div class="layout-row">
+          <div class="draggable-container style-100">
+            <div class="tool-bar"><p>Documentation</p></div>
+            <div class="child-outset">
+              <div class="folder-tabs">
+
+                <!-- Tab strip: one <button> per tab. Each button's onclick argument
+                    must match the id of its content panel below (e.g. 'tab-2' here
+                    pairs with id="tab-2" on the corresponding .content__inner). The
+                    first button carries class="active" so its panel shows by default
+                    before any click happens. -->
+                <div class="tabs">
+                  <button class="tab active" onclick="openTab(event, 'tab-1')">
+                    <div><span>overview</span></div>
+                  </button>
+                  <button class="tab" onclick="openTab(event, 'tab-2')">
+                    <div><span>algorithm</span></div>
+                  </button>
+                  <button class="tab" onclick="openTab(event, 'tab-3')">
+                    <div><span>controls</span></div>
+                  </button>
+                  <button class="tab" onclick="openTab(event, 'tab-4')">
+                    <div><span>resources</span></div>
+                  </button>
+                </div>
+
+                <!-- Content panels: one .content__inner per tab, in the same order as
+                    the buttons above. The "tab-N" ids just need to be unique on the
+                    page — if you embed more than one .folder-tabs widget in the same
+                    page, rename every id/onclick pair (e.g. "widget2-tab-1") so they
+                    don't clash with the first widget's ids. -->
+                <div class="content">
+                  <div class="content__inner" id="tab-1">
+                    <div class="page">
+                      <p>Click on the object to see magic.</p>
+                    </div>
+                  </div>
+                  <div class="content__inner" id="tab-2">
+                    <div class="page">
+                      <h1>The Discrete Heat Method Algorithm</h1>
+                      <p>This is a step-by-step walk through of the implementation running on this site, meaning what you see here is being computed in real-time whenever you click on the mesh above.</p>
+                      
+                      <hr>
+                      
+                      <h3>Phase 1: The Heat Equation</h3>
+                      <p>We first want to measure the temperature at every vertex on the mesh from a source vertex $i$ using the heat equation, i.e. dropping a hot coal on the mesh. 
+                        Integrating the heat equation over a fixed time step gives us the temperature vector $u \in \mathbb{R}^{|V|}$.</p>
+                    
+                      <ol>
+                          <li>
+                              <strong>Build the "Initial State" Vector:</strong>
+                              <div>
+                                  $$ 
+                                  \begin{aligned}
+                                  \delta_\gamma \in \mathbb{R}^{|V|} &= 
+                                  \begin{cases} 
+                                  1 & \text{for } i \in \gamma \\
+                                  0 & \text{otherwise}
+                                  \end{cases}
+                                  \end{aligned}
+                                  $$
+                              </div>
+                              <blockquote style="font-size: 0.9em; font-style: italic; margin-left: 40px;">
+                                  Construct an initial heat vector $\delta_\gamma \in \mathbb{R}^{|V|}$ representing a Kronecker delta distribution, where $\gamma$ is the set of source vertices. 
+                                  This is an array of all zeros, except for a $1$ at the source vertices. 
+                                  Multiple vertices can be set to 1 as demonstrated in the "Isolines" mode above, but can even extend to curves or regions on the surface.
+                              </blockquote>
+                          </li>
+                          <li>
+                              <strong>Build the Mass Matrix:</strong>
+                              <div>
+                                  $$ 
+                                  \begin{aligned}
+                                  A_i &= \frac{1}{3} \sum_{j \in N(i)} A_{f,j} \\ \\
+                                  M \in \mathbb{R}^{|V| \times |V|} &= \begin{bmatrix}
+                                  A_1 & \dots & 0 \\
+                                  \vdots & \ddots & \vdots \\
+                                  0 & \dots & A_{|V|}
+                                  \end{bmatrix} \\
+                                 \end{aligned}
+                                  $$
+                              </div>
+                              <blockquote style="font-size: 0.9em; font-style: italic; margin-left: 40px;">
+                                  Construct the mass matrix $M \in \mathbb{R}^{|V| \times |V|}$, a diagonal matrix where $A_i$ is the barycentric dual area around a vertex $i$, found by summing the face areas around vertex $i$'s neighborhood and dividing by 3.
+                                  This matrix is meant to normalize disporpotionate influence from larger triangles, providing a consistent heat flow on a mesh with varying triangle sizes.
+                              </blockquote>
+                          </li>
+                          <li>
+                              <strong>Build the Laplacian Matrix using the Cotangent Formula:</strong>
+                              <div>
+                                  $$ 
+                                  \begin{aligned}
+                                  w_{ij} = \frac{1}{2} (\cot \alpha_{j} + \cot \beta_{j}) \\ \\
+                                  L_{ij} = 
+                                  \begin{cases} 
+                                  \displaystyle \sum_{k \in N(i)} w_{ik} & \text{if } i = j \\ 
+                                  -w_{ij} & \text{if } j \in N(i) \\ 
+                                  0 & \text{otherwise} 
+                                  \end{cases}
+                                  \end{aligned}
+                                  $$
+                              </div>
+                              <blockquote style="font-size: 0.9em; font-style: italic; margin-left: 40px;">
+                                  Construct the graph Laplacian $L$, where $w_{ij}$ represents the "weight" between two vertices, and diagonal entries are the sum of these weights.
+                                  In general, the graph Laplacian gives the deviation from the average value of all neighbors $j$ for a vertex $i$. In this context, the cotangent formula basically captures the geometric "tension" around a vertex.
+                                  Here, the signs on the weights are flipped from the standard cotangent formula, and a small offset (such as $10^{-8}$) is added to the diagonal of the matrix to make it positive definite, allowing for Cholesky Factorization.
+                                  </blockquote>
+                          </li>
+                          <li>
+                              <strong>Solve for Heat:</strong>
+                              <div>
+                                  $$ 
+                                  \begin{aligned}
+                                  t &= h^2 \\
+                                  (M - tL)u &= \delta_\gamma \\
+                                  \end{aligned}
+                                  $$
+                              </div>
+                              <blockquote style="font-size: 0.9em; font-style: italic; margin-left: 40px;">
+                                  Solve the symmetric positive-definite linear system for the temperature vector $u$. 
+                                  The time step $t$ chosen as $t = h^2$, where $h$ is the mean edge length. 
+                                  Backward Euler is used for numerical stability.
+                              </blockquote>
+                          </li>
+                      </ol>
+
+                      <hr>
+
+                      <h3>Phase 2: The Vector Field</h3>
+                      <p>We can then convert the scalar temperatures on vertices into a vector field $X$ of directional arrows lying flat on every face pointing away from the source vertex along the surface.</p>
+                    
+                      <ol>
+                          <li>
+                              <strong>Calculate the Face Gradients:</strong>
+                              <div>
+                                 $$
+                                  \begin{aligned}
+                                  \nabla u_f = \frac{1}{2A_f} (u_i(\mathbf{N}_f \times \mathbf{e}_i) + u_j(\mathbf{N}_f \times \mathbf{e}_j) + u_k(\mathbf{N}_f \times \mathbf{e}_k))
+                                  \end{aligned}
+                                  $$
+                              </div>
+                              <blockquote style="font-size: 0.9em; font-style: italic; margin-left: 40px;">
+                                  We can find the direction the temperature is traveling on a face using its three vertices by calculating the area gradient.
+                                  Here, $N_f$ is its unit normal on face $f$, $e_i$ is the edge vector (pointing counter-clockwise), and $u_i$ is the temperature at the opposing vertex. 
+                                  Taking the cross product of the normal and the edge geometrically rotates the edge vector 90 degrees inwards across the face of the triangle, pointing in the direction of steepest temperature descent.
+                              </blockquote>
+                          </li>
+                          <li>
+                              <strong>Flip and Normalize:</strong>
+                              <div>
+                                  $$ 
+                                  \begin{aligned}
+                                  X &= -\frac{\nabla u}{|\nabla u|}
+                                  \end{aligned}
+                                  $$
+                              </div>
+                              <blockquote style="font-size: 0.9em; font-style: italic; margin-left: 40px;">
+                                  The eikonal equation states that the true distance function changes at a strict rate of "one meter per meter" (unit length). 
+                                  We discard the exponentially decaying magnitude of the heat gradient by normalizing the vectors, and negate them so they point away from the source.
+                              </blockquote>
+                          </li>
+                      </ol>
+
+                      <hr>
+
+                      <h3>Phase 3: The Poisson Equation</h3>
+                      <p>Solve the Poisson equation to reconstruct the final scalar distance $\phi$ from the vector field $X$.</p>
+                    
+                      <ol>
+                          <li>
+                              <strong>The Optimization Goal:</strong>
+                              <div>
+                                  $$ 
+                                  \begin{aligned}
+                                  \min_{\phi} \int_M |\nabla \phi - X|^2 dA
+                                  \end{aligned}
+                                  $$
+                              </div>
+                              <blockquote style="font-size: 0.9em; font-style: italic; margin-left: 40px;">
+                                  We now have a set of directions in the vector field $X$, and we need to build a final scalar field $\phi$ whose slopes match those arrows ($\nabla \phi = X$). 
+                                  We can find a "best fit" solution by minimizing the energy difference over the surface area, resulting in a scalar field that gives the distances from the source.
+                              </blockquote>
+                          </li>
+                          <li>
+                              <strong>How the Poisson Equation ties in:</strong>
+                              <div>
+                                  $$ 
+                                  \begin{aligned}
+                                  \nabla \phi &= X \\
+                                  \nabla \cdot (\nabla \phi) &= \nabla \cdot (X) \\
+                                  \Delta \phi &= \nabla \cdot X
+                                  \end{aligned}
+                                  $$
+                              </div>
+                              <blockquote style="font-size: 0.9em; font-style: italic; margin-left: 40px;">
+                                  Setting the derivative of the above energy to zero gives us the classic Poisson equation. 
+                                  Applying divergence to our vector field $X$ ties it back to the Laplacian, allowing us to build a final distance map following the flow of the field.
+                              </blockquote>
+                          </li>
+                          <li>
+                              <strong>Calculate Integrated Divergence:</strong>
+                              <div>
+                                  $$ 
+                                  \begin{aligned}
+                                  b_i &= (\nabla \cdot X)_i \\
+                                  &= \frac{1}{2} \sum_{j} \left( \cot \theta_1 (e_1 \cdot X_j) + \cot \theta_2 (e_2 \cdot X_j) \right)
+                                  \end{aligned}
+                                  $$
+                              </div>
+                              <blockquote style="font-size: 0.9em; font-style: italic; margin-left: 40px;">
+                                  Construct the vector $b \in \mathbb{R}^{|V|} = \nabla \cdot X$ containing the integrated divergences for every vertex. 
+                                  For a vertex $i$ and its neighboring faces, take the dot product of each of these face's gradient $X_j$ with the two edge vectors $e_1$ and $e_2$ containing $i$, weight them using the opposing cotangent angles $\theta_1$ and $\theta_2$, and sum them to calculate the integrated divergence around vertex $i$.
+                              </blockquote>
+                          </li>
+                          <li>
+                              <strong>Solve for Distance:</strong>
+                              <div>
+                                  $$ 
+                                  \begin{aligned}
+                                  \begin{bmatrix} (L_C)_{0,0} & \dots & (L_C)_{0,n} \\ \vdots & \ddots & \vdots \\ (L_C)_{n,0} & \dots & (L_C)_{n,n} \end{bmatrix} \begin{bmatrix} \phi_0 \\ \vdots \\ \phi_n \end{bmatrix} &= \begin{bmatrix} b_0 \\ \vdots \\ b_n \end{bmatrix} \\
+                                  \end{aligned}
+                                  $$
+                              </div>
+                              <div>
+                                  $$ 
+                                  \begin{aligned}
+                                  \phi_i &\leftarrow \phi_i - \min_{j}(\phi_j)
+                                  \end{aligned}
+                                  $$
+                              </div>
+                              <blockquote style="font-size: 0.9em; font-style: italic; margin-left: 40px;">
+                                  Solve the symmetric Poisson problem for the final distance array $\phi$. 
+                                  Because this equation determines the solution only up to an additive constant, shift the final values such that the smallest distance (the distance from the source vertex itself) is exactly zero.<br><br>
+                              </blockquote>
+                          </li>
+                      </ol>
+                    </div>
+                  </div>
+                  <div class="content__inner" id="tab-3">
+                    <div class="page">
+                      <p>WIP</p>
+                    </div>
+                  </div>
+                  <div class="content__inner" id="tab-4">
+                    <div class="page">
+                      <ul>  
+                        <li>Read the paper by Crane et al. (2013) <a href="https://www.cs.cmu.edu/~kmcrane/Projects/HeatMethod/paper.pdf" target="_blank">here</a></li>
+                        <li>Learn more about the Laplacian in geometry <a href="https://www.youtube.com/watch?v=oEq9ROl9Umk&list=PL9_jI1bdZmz0hIrNCMQW1YmZysAiIYSSS&index=22" target="_blank">here</a></li>
+                        <li>Learn more about the PDEs used to solve this <a href="https://www.youtube.com/watch?v=ly4S0oi3Yz8&t=1s" target="_blank">here</a></li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

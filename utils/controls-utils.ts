@@ -1,28 +1,41 @@
 /**
- * Attaches standardized UI behaviors (styles, ripples) and hooks up custom feature functions.
- * 
+ * Wires a push button, already written in the page's HTML, to a custom
+ * function — e.g. a graphics script's Run/Stop/Reset controls.
+ *
+ * Why: the HTML owns the markup and the script owns the behavior, same split
+ * as initializeRadioGroup below. The button only reports presses; it never
+ * decides on its own whether it looks latched (`is-toggled`). That state
+ * usually lives elsewhere and changes from more than one control — a Run
+ * button must pop back up when Stop, Reset, or a mode switch halts the run —
+ * so a button flipping itself on every click would track click count, not
+ * real state (clicking Run twice would un-latch it while still running).
+ * Whoever owns the state sets the look with setButtonToggled().
+ *
+ * How:
+ *   1. Visual feedback: pointerdown/up toggles `is-pressed` (momentary sunken
+ *      look). `:active` alone is unreliable on touch screens, hence the class.
+ *   2. Execution: listens for `click`, which also covers keyboard activation
+ *      (Enter/Space on a focused <button>), and passes the event through.
+ *
  * @param element - The target DOM element
- * @param customFn - The background feature function to run on click
- * @returns A cleanup function to remove the event listener
+ * @param customFn - The feature function to run on click
+ * @returns A cleanup function to remove all event listeners
  */
 export function initializeButton(
-    element: HTMLElement | null, 
+    element: HTMLElement | null,
     customFn: (event: Event) => void
 ): () => void {
     if (!element) {
         console.log("initializeButton: element is null, no event listener attached.");
         return () => {};
     }
-    
+
     // 1. Visual Feedback Logic (Instant touch/mouse response)
     const handlePointerDown = () => element.classList.add('is-pressed');
     const handlePointerUp = () => element.classList.remove('is-pressed');
 
     // 2. Execution Logic
-    const handleClick = (event: Event) => {
-        element.classList.toggle('is-toggled');
-        customFn(event); // We just pass the event itself
-    };
+    const handleClick = (event: Event) => customFn(event);
 
     element.addEventListener('pointerdown', handlePointerDown);
     element.addEventListener('pointerup', handlePointerUp);
@@ -37,6 +50,25 @@ export function initializeButton(
         element.removeEventListener('pointercancel', handlePointerUp);
         element.removeEventListener('click', handleClick);
     };
+}
+
+/**
+ * Sets whether a button looks latched (held down) — e.g. Run staying sunken
+ * while a flow runs.
+ *
+ * Why: see initializeButton — the latched look must follow real state, which
+ * only the caller knows. This is the one place that writes the class, so the
+ * CSS contract (`.ui-button.is-toggled` in ui_design/ui.css) isn't spelled
+ * out in every script.
+ *
+ * How: adds `is-toggled` when `toggled` is true and removes it otherwise, so
+ * calling it repeatedly with the same value is harmless.
+ *
+ * @param element - The target DOM element
+ * @param toggled - true for the latched (sunken) look, false for resting
+ */
+export function setButtonToggled(element: HTMLElement | null, toggled: boolean): void {
+    element?.classList.toggle('is-toggled', toggled);
 }
 
 /**

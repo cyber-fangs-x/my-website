@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Fang - Graphics Developer</title>
     <link rel="icon" type="image/x-icon" href="imgs/rei.png">
     
@@ -9,9 +11,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Lekton:ital,wght@0,400;0,700;1,400&family=Silkscreen:wght@400;700&family=Workbench&display=swap" rel="stylesheet">
     
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="ui_design/style.css">
     <script type="module" src="background.ts" defer></script>
-    <script type="module" src="torus_demo.ts" defer></script>
+    <script type="module" src="cube.ts" defer></script>
 
 </head>
   <body data-theme-color="purple">
@@ -32,9 +34,15 @@
       </nav>
 
       <!-- Content Area -->
-      <div class="container" style="font-family: monospace; height: 800px;">
-        <div><p>welcome to my site!!</p><p>Visual Computing Developer | Geometry & Simulation. Developer focused on the intersection of applied mathematics and visual design. I implement algorithms for geometry processing, continuous physical simulation, and compute shaders, translating SIGGRAPH research into interactive visual tools.</p></div>
-        <div class="graphics-container" id="torus-container"></div>
+      <div class="container" style="font-family: monospace;">
+        <div class="intro-text">
+          <p class="lead">Welcome to my website!! <br> My name is Eddie, I am a programmer based in NYC.</p>
+          <p>Online I go by <strong>Fang</strong>, a name that started in the gaming spaces I hang out in during my downtime. While gaming is my hobby, my obsession is breaking down how those virtual worlds are actually built.</p>
+          <p>Behind every object, light, and motion you've seen in a pixar movie, there are many different layers of math that make objects recognizable despite just being pixels on a screen. In order for a computer to draw a 3D cube on a 2D screen, we need to first describe to it what a cube even is, but since computers only understand 1s and 0s, we end up requiring math to achieve this.</p>
+          <p>From this perspective, <strong>math is the language used to describe 3D space</strong>, just like how english is the language I'm using to write this. And just like there are many different ways for me to phrase these sentences, there are also many different ways math can be used to describe the same object.</p>
+          <p>My goal with this website is to <strong>explore graphics algorithms</strong> I find interesting, break down their nuances, and demystify them for anyone who loves visual art and wants to see what's happening beneath the surface. Check them out in my <a href="projects.html">projects page</a>!</p>
+        </div>
+        <div class="graphics-container square" id="cube-container"></div>
       </div>  
     </div>
   </body>
